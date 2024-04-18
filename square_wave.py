@@ -1,5 +1,5 @@
 import numpy as np
-from PIL import Image as im
+from PIL import Image
 
 
 y_max = 64
@@ -16,5 +16,5 @@ for i in range(1920):
 for j in range(1152):
     array[j] = array[0]
 
-image = im.fromarray(array)
+image = Image.fromarray(array)
 image.show()

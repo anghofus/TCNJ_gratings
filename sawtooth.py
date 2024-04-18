@@ -17,8 +17,6 @@ def generate_image(x_max, y_max, phi):
 
     waveform = (1 + signal.sawtooth(omega * t + math.radians(phi))) * y_max
 
-    print(waveform)
-
     for i in range(1920):
         image[0][i] = waveform[i]
 
