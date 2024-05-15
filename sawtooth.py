@@ -43,7 +43,7 @@ if __name__ == '__main__':
     path = os.getcwd()
     if shift == 1:
         image = im.fromarray(generate_image(x_max=x_max, y_max=y_max, phi=0))
-        image_shifted = im.fromarray(generate_image(x_max=x_max, y_max=y_max, phi=180))
+        image_shifted = im.fromarray(generate_image(x_max=x_max, y_max=y_max, phi=180)).convert("L")
         if save_or_show == 1:
             image.show()
             image_shifted.show()
@@ -53,7 +53,7 @@ if __name__ == '__main__':
             image_shifted.save(f"{path}/{timestamp}_shifted.jpg")
 
     if shift == 0:
-        image = im.fromarray(generate_image(x_max=x_max, y_max=y_max, phi=0))
+        image = im.fromarray(generate_image(x_max=x_max, y_max=y_max, phi=0)).convert("L")
         if save_or_show == 1:
             image.show()
         if save_or_show == 0:
