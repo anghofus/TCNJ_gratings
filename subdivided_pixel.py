@@ -7,6 +7,16 @@ import time
 
 # Convert hex color to RGB percentages
 def hex_to_rgb_percentage(hex_color: str):
+    """
+    Convert a hex color string to RGB percentage representation.
+
+    Parameters:
+    hex_color (str): A 6-character hex color string.
+
+    Returns:
+    tuple: A tuple representing the RGB percentages.
+    """
+
     # Ensure the hex color is valid
     assert len(hex_color) == 6, "Invalid hex color"
     assert all(char <= 'f' for char in hex_color if char.isalpha()), "Invalid hex color"
@@ -24,7 +34,16 @@ def hex_to_rgb_percentage(hex_color: str):
 
 # Class for generating pixel patterns
 class PixelGeneration:
+    """
+    A class to generate and handle pixel operations.
+    """
+
     def __init__(self):
+
+        """
+        Initialize the PixelGeneration class with default parameters.
+        """
+
         # Define the dimensions and parameters for the pixel grid and waveforms
         self.subpixel_width = 576
         self.subpixel_height = 576
@@ -41,6 +60,17 @@ class PixelGeneration:
 
     # Generate subdivided pixel patterns based on input colors
     def subdivided_pixel(self, color: list):
+
+        """
+        Create subdivided pixels based on the given color list.
+
+        Parameters:
+        color (list): A list of 6 hex color strings.
+
+        Returns:
+        Image: A PIL image object representing the generated pixel image.
+        """
+
         assert len(color) == 6, "color list must have 6 entries"
 
         rgb_color = []
@@ -99,6 +129,14 @@ class PixelGeneration:
 
     # Place subpixel patterns into the main pixel grid
     def place_subpixel(self, i: int):
+
+        """
+        Place the subpixel in the correct position in the final image.
+
+        Parameters:
+        i (int): The index of the subpixel to be placed.
+        """
+
         assert 0 <= i <= 5, "i can only be between 0 and 5"
 
         current_subpixel = self.subpixel_list[i]
