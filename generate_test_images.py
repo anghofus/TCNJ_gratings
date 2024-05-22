@@ -16,6 +16,5 @@ for y in range(height):
         image_array[x][y][1] = green
         image_array[x][y][2] = blue
 
-print(image_array)
 image = Image.fromarray(image_array, "RGB")
 image.save('test.png')
