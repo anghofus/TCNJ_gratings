@@ -8,18 +8,22 @@ import numpy as np
 from PIL import Image as im
 from scipy import signal 
 import csv
+import os
+
 
 class PrepSLM:
     def __init__(self):
-        
-        img = im.open("C:/Users/mcgeelab/Desktop/PreparedImages/DALL-E_Irises_Vincent_van_Gogh.png")
+
+        filepath = os.getcwd()
+        filename = "test.png"
+        img = im.open(os.path.join(filepath, filename))
         imgsplit = img.split()
         
         self.redarray = np.asarray(imgsplit[0])
         self.greenarray = np.asarray(imgsplit[1])
         self.bluearray = np.asarray(imgsplit[2])
         
-        self.height, self.width = self.redarray.shape[:2]
+        self.height, self.width = img.size
         
         self.columns = self.width
         self.rows = self.height
@@ -42,7 +46,6 @@ class PrepSLM:
         
         # We start at Pixel 1
         self.counter = 1
-    
     
     def make_SLM_pattern(self, red,green,blue):
         array= np.zeros((1152,1920))
@@ -92,7 +95,6 @@ class PrepSLM:
             start_y += slm
     
         return points
-    
     
     def image_creator(self):
         
@@ -178,6 +180,24 @@ class PrepSLM:
             writer.writerows(modified_data)
     
         print("Both CSV-Sheets have been created")
+
+
+def image_to_rgb_array(image):
+    image_split = image.split()
+
+    red_array = np.asarray(image_split[0])
+    green_array = np.asarray(image_split[1])
+    blue_array = np.asarray(image_split[2])
+
+    height, width = red_array.shape[:2]
+
+    rgb_array = np.zeros((height, width), dtype=object)
+
+    for y in range(height):
+        for x in range(width):
+            rgb_array[y][x] = (red_array[y][x], green_array[y][x], blue_array[y][x])
+
+    return rgb_array
 
 
 if __name__ == "__main__":
