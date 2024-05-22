@@ -15,7 +15,7 @@ class PrepSLM:
     def __init__(self):
 
         filepath = os.getcwd()
-        filename = "test.png"
+        filename = "../test.png"
         img = im.open(os.path.join(filepath, filename))
         imgsplit = img.split()
         
