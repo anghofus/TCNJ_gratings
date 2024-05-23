@@ -41,8 +41,6 @@ class PatternGeneration:
 
         assert len(rgb_color) == 6, "color list must have 6 entries"
 
-        rgb_color = []
-
         # Generate time array for the waveforms
         t = np.linspace(0, self.subpixel_width, self.subpixel_width)
 
