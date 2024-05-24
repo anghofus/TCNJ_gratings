@@ -10,7 +10,11 @@ class PatternGeneration:
         filename = "test.png"
         image = Image.open(os.path.join(filepath, filename))
 
+        if image.size > (270, 270):
+            raise Exception("Image must have a resolution auf 270x270 or less")
+
         rgb_array = image_to_rgb_array(image)
+        subpixel_list = rgb_array_to_pixel_list(rgb_array)
 
         # Define the dimensions and parameters for the pixel grid and waveforms
         self.subpixel_width = 576
@@ -140,6 +144,24 @@ def image_to_rgb_array(image):
             rgb_array[y][x] = (red_array[y][x], green_array[y][x], blue_array[y][x])
 
     return rgb_array
+
+def rgb_array_to_pixel_list(rgb_array):
+
+    sub_pixel_height = 2
+    sub_pixel_width = 3
+    pixel_list = []
+
+    for rgb_array_y in range(0, rgb_array.shape[0]-1, 2):
+        for rgb_array_x in range(0, rgb_array.shape[1]-1, 3):
+            sub_pixel_color = []
+            for sub_pixel_y in range(sub_pixel_height):
+                for sub_pixel_x in range(sub_pixel_width):
+                    target_y = rgb_array_y + sub_pixel_y
+                    target_x = rgb_array_x + sub_pixel_x
+                    sub_pixel_color.append(rgb_array[target_y][target_x])
+            pixel_list.append(sub_pixel_color)
+
+    return pixel_list
 
 
 if __name__ == "__main__":
