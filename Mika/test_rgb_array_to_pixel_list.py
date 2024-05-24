@@ -22,24 +22,49 @@ def rgb_array_to_pixel_list(rgb_array):
     return pixel_list
 
 
-def test_array(height, width):
+def generate_added_RGB_values(pixel_list):
+    added_RGB_values = []
+    for i, pixel in enumerate(pixel_list):
+        added_color = []
+        for subpixel in pixel:
+            sum_subpixel = int(subpixel[0]) + int(subpixel[1]) + int(subpixel[2])
+            added_color.append(sum_subpixel)
+        average = sum(added_color) / len(added_color)
+        added_RGB_values.append(average)
 
-    array = np.zeros((height, width))
-    k = 1
+    return added_RGB_values
 
-    for i in range(height):
-        for j in range(width):
-            array[i][j] = k
-            k += 1
-    return array
+
+def image_to_rgb_array(image):
+    image_split = image.split()
+
+    red_array = np.asarray(image_split[0])
+    green_array = np.asarray(image_split[1])
+    blue_array = np.asarray(image_split[2])
+
+    height, width = red_array.shape[:2]
+
+    rgb_array = np.zeros((height, width), dtype=object)
+
+    for y in range(height):
+        for x in range(width):
+            rgb_array[y][x] = (red_array[y][x], green_array[y][x], blue_array[y][x])
+
+    return rgb_array
 
 
 if __name__ == "__main__":
+    current_path = os.getcwd()
+    filename = "test.png"
+    image = Image.open(os.path.join(current_path, filename))
 
-    rgb_array = test_array(10,  10)
-    print(rgb_array)
+    rgb_array = image_to_rgb_array(image)
+    pixel_list = rgb_array_to_pixel_list(rgb_array)
 
-    rgb_list = rgb_array_to_pixel_list(rgb_array)
-    print(rgb_list)
+    added_RGB_values = generate_added_RGB_values(pixel_list)
+
+    print(len(pixel_list))
+    print(len(added_RGB_values))
+
 
 
