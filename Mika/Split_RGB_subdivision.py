@@ -46,8 +46,8 @@ class PatternGeneration:
             slm_image = self.subdivided_pixel(pixel)
             slm_image_filename = f"pattern_{i+1}.png"
             slm_image_filepath = os.path.join(self.filepath, slm_image_filename)
+            slm_image.save(slm_image_filepath)
             print(f"image {i} saved")
-            # slm_image.save(slm_image_filepath)
 
     # Generate subdivided pixel patterns based on input colors
     def subdivided_pixel(self, rgb_color: list):
