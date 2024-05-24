@@ -35,16 +35,19 @@ class PatternGeneration:
         if image.size > (270, 270):
             raise Exception("Image must have a resolution auf 270x270 or less")
 
-        self.image_width, self.image_height = image.size
+        self.image_width, self.image_height = image.size[0] // 3, image.size[1] // 2
+
         self.rgb_array = image_to_rgb_array(image)
         self.pixel_list = self.rgb_array_to_pixel_list(self.rgb_array)
         self.added_RGB_values = self.generate_added_RGB_values()
+        self.create_csv()
 
         for i, pixel in enumerate(self.pixel_list):
             slm_image = self.subdivided_pixel(pixel)
             slm_image_filename = f"pattern_{i+1}.png"
             slm_image_filepath = os.path.join(self.filepath, slm_image_filename)
-            slm_image.save(slm_image_filepath)
+            print(f"image {i} saved")
+            # slm_image.save(slm_image_filepath)
 
     # Generate subdivided pixel patterns based on input colors
     def subdivided_pixel(self, rgb_color: list):
@@ -75,11 +78,11 @@ class PatternGeneration:
         waveform_blue = (1 + signal.sawtooth(omega_blue * t)) * self.y_max / 2
 
         # Generate subpixel patterns based on RGB percentages
-        for i in range(len(rgb_color)):
-            rgb = rgb_color[i]
+        for i, rgb in enumerate(rgb_color):
+            total = int(rgb[0]) + int(rgb[1]) + int(rgb[2])
             subpixel = np.zeros((self.subpixel_width, self.subpixel_height))
-            red_width = int(rgb[0]) * self.subpixel_width
-            green_width = int(rgb[1]) * self.subpixel_width
+            red_width = int(rgb[0]) / total * self.subpixel_width
+            green_width = int(rgb[1]) / total * self.subpixel_width
 
             j = 0
             k = 0
@@ -98,7 +101,6 @@ class PatternGeneration:
                 k += 1
 
             self.subpixel_list.append(subpixel)
-            print(f"Subpixel {i} finished")
 
         # Place the generated subpixels into the main pixel grid
         for i in range(len(self.subpixel_list)):
@@ -106,6 +108,8 @@ class PatternGeneration:
 
         # Convert the pixel grid to an image
         image = Image.fromarray(self.pixel).convert("L")
+
+        self.subpixel_list = []
 
         return image
 
@@ -147,8 +151,8 @@ class PatternGeneration:
 
         pixel_list = []
 
-        for rgb_array_y in range(0, rgb_array.shape[0] - 1, self.subpixel_height):
-            for rgb_array_x in range(0, rgb_array.shape[1] - 1, self.subpixel_width):
+        for rgb_array_y in range(0, rgb_array.shape[0] - 1, self.pixel_height):
+            for rgb_array_x in range(0, rgb_array.shape[1] - 1, self.pixel_width):
                 sub_pixel_color = []
                 for sub_pixel_y in range(self.pixel_height):
                     for sub_pixel_x in range(self.pixel_width):
@@ -253,4 +257,5 @@ def calculate_coordinates(rows, columns, slm):
 
 
 if __name__ == "__main__":
-    pass
+    PatternGeneration()
+    print("Process completed")
