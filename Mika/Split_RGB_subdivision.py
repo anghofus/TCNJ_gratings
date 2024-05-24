@@ -6,21 +6,16 @@ from scipy import signal
 
 class PatternGeneration:
     def __init__(self):
-        filepath = os.getcwd()
-        filename = "test.png"
-        image = Image.open(os.path.join(filepath, filename))
-
-        if image.size > (270, 270):
-            raise Exception("Image must have a resolution auf 270x270 or less")
-
-        rgb_array = image_to_rgb_array(image)
-        subpixel_list = rgb_array_to_pixel_list(rgb_array)
-
         # Define the dimensions and parameters for the pixel grid and waveforms
         self.subpixel_width = 576
         self.subpixel_height = 576
+
+        self.pixel_height = 2
+        self.pixel_width = 3
+
         self.slm_width = 1920
         self.slm_height = 1152
+
         self.x_max_red = 38.91
         self.x_max_green = 32.7
         self.x_max_blue = 30
@@ -29,6 +24,17 @@ class PatternGeneration:
         # Initialize the list of subpixels and the main pixel grid
         self.subpixel_list = []
         self.pixel = np.zeros((self.slm_height, self.slm_width))
+
+        filepath = os.getcwd()
+        filename = "test.png"
+        image = Image.open(os.path.join(filepath, filename))
+
+        if image.size > (270, 270):
+            raise Exception("Image must have a resolution auf 270x270 or less")
+
+        self.rgb_array = image_to_rgb_array(image)
+        self.pixel_list = self.rgb_array_to_pixel_list(self.rgb_array)
+        self.added_RGB_values = self.generate_added_RGB_values()
 
     # Generate subdivided pixel patterns based on input colors
     def subdivided_pixel(self, rgb_color: list):
@@ -127,6 +133,33 @@ class PatternGeneration:
                 target_y = y_coordinate + y
                 self.pixel[target_y][target_x] = current_subpixel[y][x]
 
+    def rgb_array_to_pixel_list(self, rgb_array):
+
+        pixel_list = []
+
+        for rgb_array_y in range(0, rgb_array.shape[0] - 1, self.subpixel_height):
+            for rgb_array_x in range(0, rgb_array.shape[1] - 1, self.subpixel_width):
+                sub_pixel_color = []
+                for sub_pixel_y in range(self.pixel_height):
+                    for sub_pixel_x in range(self.pixel_width):
+                        target_y = rgb_array_y + sub_pixel_y
+                        target_x = rgb_array_x + sub_pixel_x
+                        sub_pixel_color.append(rgb_array[target_y][target_x])
+                pixel_list.append(sub_pixel_color)
+
+        return pixel_list
+
+    def generate_added_RGB_values(self):
+        added_RGB_values = []
+        for i, pixel in enumerate(self.pixel_list):
+            added_color = []
+            for subpixel in pixel:
+                sum_subpixel = int(subpixel[0]) + int(subpixel[1]) + int(subpixel[2])
+                added_color.append(sum_subpixel)
+            average = sum(added_color) / len(added_color)
+            added_RGB_values.append(average)
+
+        return added_RGB_values
 
 def image_to_rgb_array(image):
     image_split = image.split()
@@ -144,24 +177,6 @@ def image_to_rgb_array(image):
             rgb_array[y][x] = (red_array[y][x], green_array[y][x], blue_array[y][x])
 
     return rgb_array
-
-def rgb_array_to_pixel_list(rgb_array):
-
-    sub_pixel_height = 2
-    sub_pixel_width = 3
-    pixel_list = []
-
-    for rgb_array_y in range(0, rgb_array.shape[0]-1, 2):
-        for rgb_array_x in range(0, rgb_array.shape[1]-1, 3):
-            sub_pixel_color = []
-            for sub_pixel_y in range(sub_pixel_height):
-                for sub_pixel_x in range(sub_pixel_width):
-                    target_y = rgb_array_y + sub_pixel_y
-                    target_x = rgb_array_x + sub_pixel_x
-                    sub_pixel_color.append(rgb_array[target_y][target_x])
-            pixel_list.append(sub_pixel_color)
-
-    return pixel_list
 
 
 if __name__ == "__main__":
