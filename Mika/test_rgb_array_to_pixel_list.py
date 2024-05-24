@@ -63,8 +63,8 @@ if __name__ == "__main__":
 
     added_RGB_values = generate_added_RGB_values(pixel_list)
 
-    print(len(pixel_list))
-    print(len(added_RGB_values))
+    print(len(pixel_list), pixel_list)
+    print(len(added_RGB_values), added_RGB_values)
 
 
 

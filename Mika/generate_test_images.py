@@ -2,10 +2,10 @@ from PIL import Image
 import numpy as np
 
 red = 255
-green = 0
+green = 255
 blue = 0
 
-height = 10
+height = 20
 width = 10
 
 image_array = np.zeros((height, width, 3), dtype=np.uint8)
