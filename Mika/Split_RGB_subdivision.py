@@ -4,13 +4,17 @@ import os
 from scipy import signal
 import csv
 
-
 class PatternGeneration:
     def __init__(self):
-        # Define the dimensions and parameters for the pixel grid and waveforms
+        """
+        Initialize the PatternGeneration class with default parameters,
+        load the image, and start the pixel processing and CSV creation.
+        """
+        # Set the file path and image filename
         self.filepath = os.getcwd()
         filename_image = "test.png"
 
+        # Define dimensions for subpixels and SLM (spatial light modulator)
         self.subpixel_width = 576
         self.subpixel_height = 576
 
@@ -21,27 +25,31 @@ class PatternGeneration:
         self.slm_height = 1152
         self.slm = 484
 
+        # Define maximum values for RGB waveforms
         self.x_max_red = 38.91
         self.x_max_green = 32.7
         self.x_max_blue = 30
         self.y_max = 128
 
-        # Initialize the list of subpixels and the main pixel grid
+        # Initialize subpixel list and main pixel grid
         self.subpixel_list = []
         self.pixel = np.zeros((self.slm_height, self.slm_width))
 
+        # Load and validate the image
         image = Image.open(os.path.join(self.filepath, filename_image))
-
         if image.size > (270, 270):
-            raise Exception("Image must have a resolution auf 270x270 or less")
+            raise Exception("Image must have a resolution of 270x270 or less")
 
+        # Set dimensions of the image in terms of subpixels
         self.image_width, self.image_height = image.size[0] // 3, image.size[1] // 2
 
+        # Convert image to an RGB array
         self.rgb_array = image_to_rgb_array(image)
         self.pixel_list = self.rgb_array_to_pixel_list(self.rgb_array)
         self.added_RGB_values = self.generate_added_RGB_values()
         self.create_csv()
 
+        # Generate and save subdivided pixel patterns for each pixel
         for i, pixel in enumerate(self.pixel_list):
             slm_image = self.subdivided_pixel(pixel)
             slm_image_filename = f"pattern_{i+1}.png"
@@ -49,30 +57,27 @@ class PatternGeneration:
             slm_image.save(slm_image_filepath)
             print(f"image {i} saved")
 
-    # Generate subdivided pixel patterns based on input colors
     def subdivided_pixel(self, rgb_color: list):
-
         """
         Create subdivided pixels based on the given color list.
 
         Parameters:
-        color (list): A list of 6 rgb colors.
+        rgb_color (list): A list of 6 RGB colors.
 
         Returns:
         Image: A PIL image object representing the generated pixel image.
         """
-
         assert len(rgb_color) == 6, "color list must have 6 entries"
 
         # Generate time array for the waveforms
         t = np.linspace(0, self.subpixel_width, self.subpixel_width)
 
-        # Define the angular frequencies for the waveforms
+        # Define the angular frequencies for the waveforms based on max values
         omega_red = 2 * np.pi * 1 / self.x_max_red
         omega_green = 2 * np.pi * 1 / self.x_max_green
         omega_blue = 2 * np.pi * 1 / self.x_max_blue
 
-        # Generate the waveforms for each color channel
+        # Generate the waveforms for each color channel using a sawtooth wave
         waveform_red = (1 + signal.sawtooth(omega_red * t)) * self.y_max / 2
         waveform_green = (1 + signal.sawtooth(omega_green * t)) * self.y_max / 2
         waveform_blue = (1 + signal.sawtooth(omega_blue * t)) * self.y_max / 2
@@ -81,6 +86,8 @@ class PatternGeneration:
         for i, rgb in enumerate(rgb_color):
             total = int(rgb[0]) + int(rgb[1]) + int(rgb[2])
             subpixel = np.zeros((self.subpixel_width, self.subpixel_height))
+
+            # Calculate widths for each color band within the subpixel
             red_width = int(rgb[0]) / total * self.subpixel_width
             green_width = int(rgb[1]) / total * self.subpixel_width
 
@@ -106,28 +113,24 @@ class PatternGeneration:
         for i in range(len(self.subpixel_list)):
             self.place_subpixel(i)
 
-        # Convert the pixel grid to an image
+        # Convert the pixel grid to an image and return it
         image = Image.fromarray(self.pixel).convert("L")
-
         self.subpixel_list = []
 
         return image
 
-    # Place subpixel patterns into the main pixel grid
     def place_subpixel(self, i: int):
-
         """
         Place the subpixel in the correct position in the final image.
 
         Parameters:
         i (int): The index of the subpixel to be placed.
         """
-
         assert 0 <= i <= 5, "i can only be between 0 and 5"
 
         current_subpixel = self.subpixel_list[i]
 
-        # Define coordinates for each subpixel placement
+        # Define coordinates for each subpixel placement based on index
         coordinates = [
             (32, 0),  # for i == 0
             (672, 0),  # for i == 1
@@ -137,7 +140,7 @@ class PatternGeneration:
             (1312, 576)  # for i == 5
         ]
 
-        # Get the starting coordinates
+        # Get the starting coordinates for the subpixel
         x_coordinate, y_coordinate = coordinates[i]
 
         # Place the current subpixel into the main pixel grid
@@ -148,12 +151,22 @@ class PatternGeneration:
                 self.pixel[target_y][target_x] = current_subpixel[y][x]
 
     def rgb_array_to_pixel_list(self, rgb_array):
+        """
+        Convert the RGB array to a list of pixels.
 
+        Parameters:
+        rgb_array (ndarray): The RGB array of the image.
+
+        Returns:
+        list: A list of pixels.
+        """
         pixel_list = []
 
+        # Iterate over the RGB array in steps of pixel_height and pixel_width
         for rgb_array_y in range(0, rgb_array.shape[0] - 1, self.pixel_height):
             for rgb_array_x in range(0, rgb_array.shape[1] - 1, self.pixel_width):
                 sub_pixel_color = []
+                # Collect the colors for each subpixel
                 for sub_pixel_y in range(self.pixel_height):
                     for sub_pixel_x in range(self.pixel_width):
                         target_y = rgb_array_y + sub_pixel_y
@@ -164,9 +177,16 @@ class PatternGeneration:
         return pixel_list
 
     def generate_added_RGB_values(self):
+        """
+        Calculate the sum of RGB values for each pixel and average them.
+
+        Returns:
+        list: A list of averaged RGB values.
+        """
         added_RGB_values = []
         for i, pixel in enumerate(self.pixel_list):
             added_color = []
+            # Sum the RGB values for each subpixel
             for subpixel in pixel:
                 sum_subpixel = int(subpixel[0]) + int(subpixel[1]) + int(subpixel[2])
                 added_color.append(sum_subpixel)
@@ -175,13 +195,13 @@ class PatternGeneration:
 
         return added_RGB_values
 
-    # Function to calculate coordinates in the snake pattern
-
     def create_csv(self):
-        # Create a new CSV file and write the added_rgb_values to it
+        """
+        Create CSV files for the added RGB values and dataset with coordinates.
+        """
+        # Create a new CSV file and write the added RGB values to it
         filename_added_RGB = "added_RGB_values.csv"
         added_RGB_values_path = os.path.join(self.filepath, filename_added_RGB)
-        # added_RGB_values_path = "C:/Users/mcgeelab/Desktop/SLMImages/added_RGB_values.csv"
 
         with open(added_RGB_values_path, 'w', newline='') as csv_file:
             csv_writer = csv.writer(csv_file)
@@ -193,7 +213,6 @@ class PatternGeneration:
         # Specify the input and output file paths
         filename_dataset = "dataset.csv"
         dataset_path = os.path.join(self.filepath, filename_dataset)
-        # dataset_path = 'C:/Users/mcgeelab/Desktop/SLMImages/dataset.csv'
 
         # Calculate new coordinates without relying on added_RGB_values.csv
         coordinates = calculate_coordinates(self.image_height, self.image_width, self.slm)
@@ -205,7 +224,6 @@ class PatternGeneration:
         for i in range(len(coordinates)):
             # Include exp_times in the first column and update the second and third columns
             modified_data.append([self.added_RGB_values[i]] + [int(coord) for coord in coordinates[i]])
-            # + list(coordinates[i]))
 
         # Open the CSV file for writing
         with open(dataset_path, 'w', newline='') as output_file:
@@ -217,27 +235,50 @@ class PatternGeneration:
 
         print("Both CSV-Sheets have been created")
 
-
 def image_to_rgb_array(image):
+    """
+    Convert an image to an RGB array.
+
+    Parameters:
+    image (PIL.Image): The input image.
+
+    Returns:
+    ndarray: An array representation of the image in RGB format.
+    """
+    # Split the image into its RGB components
     image_split = image.split()
 
+    # Convert each component to a numpy array
     red_array = np.asarray(image_split[0])
     green_array = np.asarray(image_split[1])
     blue_array = np.asarray(image_split[2])
 
     height, width = red_array.shape[:2]
 
+    # Initialize an empty array to hold the RGB tuples
     rgb_array = np.zeros((height, width), dtype=object)
 
+    # Combine the RGB components into tuples
     for y in range(height):
         for x in range(width):
             rgb_array[y][x] = (red_array[y][x], green_array[y][x], blue_array[y][x])
 
     return rgb_array
 
-
 def calculate_coordinates(rows, columns, slm):
+    """
+    Calculate coordinates in a snake pattern.
+
+    Parameters:
+    rows (int): Number of rows.
+    columns (int): Number of columns.
+    slm (int): Spatial light modulator value.
+
+    Returns:
+    list: A list of coordinate tuples.
+    """
     points = []
+    # Initialize starting coordinates
     start_x = ((columns / 2) - 1) * slm + slm / 2
     start_y = -(((rows / 2) - 1) * slm + slm / 2)
 
@@ -254,7 +295,6 @@ def calculate_coordinates(rows, columns, slm):
         start_y += slm * (145 / 242)
 
     return points
-
 
 if __name__ == "__main__":
     PatternGeneration()
