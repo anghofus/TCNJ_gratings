@@ -40,6 +40,12 @@ class PatternGeneration:
         self.pixel_list = self.rgb_array_to_pixel_list(self.rgb_array)
         self.added_RGB_values = self.generate_added_RGB_values()
 
+        for i, pixel in enumerate(self.pixel_list):
+            slm_image = self.subdivided_pixel(pixel)
+            slm_image_filename = f"pattern_{i+1}.png"
+            slm_image_filepath = os.path.join(self.filepath, slm_image_filename)
+            slm_image.save(slm_image_filepath)
+
     # Generate subdivided pixel patterns based on input colors
     def subdivided_pixel(self, rgb_color: list):
 
@@ -72,8 +78,8 @@ class PatternGeneration:
         for i in range(len(rgb_color)):
             rgb = rgb_color[i]
             subpixel = np.zeros((self.subpixel_width, self.subpixel_height))
-            red_width = rgb[0] * self.subpixel_width
-            green_width = rgb[1] * self.subpixel_width
+            red_width = int(rgb[0]) * self.subpixel_width
+            green_width = int(rgb[1]) * self.subpixel_width
 
             j = 0
             k = 0
@@ -166,24 +172,6 @@ class PatternGeneration:
         return added_RGB_values
 
     # Function to calculate coordinates in the snake pattern
-    def calculate_coordinates(self, rows, columns, slm):
-        points = []
-        start_x = ((columns / 2) - 1) * slm + slm / 2
-        start_y = -(((rows / 2) - 1) * slm + slm / 2)
-
-        for row in range(rows):
-            for col in range(columns):
-                points.append((start_x, start_y))
-
-                # Update x-coordinate based on row parity and not at the end of the row
-                if col < columns - 1:
-                    start_x -= slm if (row % 2 == 0) else 0
-                    start_x += slm if (row % 2 != 0) else 0
-
-            # Update y-coordinate at the end of each row
-            start_y += slm * (145 / 242)
-
-        return points
 
     def create_csv(self):
         # Create a new CSV file and write the added_rgb_values to it
@@ -204,7 +192,7 @@ class PatternGeneration:
         # dataset_path = 'C:/Users/mcgeelab/Desktop/SLMImages/dataset.csv'
 
         # Calculate new coordinates without relying on added_RGB_values.csv
-        coordinates = self.calculate_coordinates(self.image_height, self.image_width, self.slm)
+        coordinates = calculate_coordinates(self.image_height, self.image_width, self.slm)
 
         # Create a new list to store the modified data
         modified_data = []
@@ -242,6 +230,26 @@ def image_to_rgb_array(image):
             rgb_array[y][x] = (red_array[y][x], green_array[y][x], blue_array[y][x])
 
     return rgb_array
+
+
+def calculate_coordinates(rows, columns, slm):
+    points = []
+    start_x = ((columns / 2) - 1) * slm + slm / 2
+    start_y = -(((rows / 2) - 1) * slm + slm / 2)
+
+    for row in range(rows):
+        for col in range(columns):
+            points.append((start_x, start_y))
+
+            # Update x-coordinate based on row parity and not at the end of the row
+            if col < columns - 1:
+                start_x -= slm if (row % 2 == 0) else 0
+                start_x += slm if (row % 2 != 0) else 0
+
+        # Update y-coordinate at the end of each row
+        start_y += slm * (145 / 242)
+
+    return points
 
 
 if __name__ == "__main__":
