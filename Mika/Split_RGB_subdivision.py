@@ -11,7 +11,8 @@ class PatternGeneration:
         load the image, and start the pixel processing and CSV creation.
         """
         # Set the file path and image filename
-        self.filepath = os.getcwd()
+        self.filepath_output = os.getcwd()
+        self.filepath_input = os.getcwd()
         filename_image = "test.png"
 
         # Define dimensions for subpixels and SLM (spatial light modulator)
@@ -36,7 +37,7 @@ class PatternGeneration:
         self.pixel = np.zeros((self.slm_height, self.slm_width))
 
         # Load and validate the image
-        image = Image.open(os.path.join(self.filepath, filename_image))
+        image = Image.open(os.path.join(self.filepath_input, filename_image))
         if image.size > (270, 270):
             raise Exception("Image must have a resolution of 270x270 or less")
 
@@ -53,7 +54,7 @@ class PatternGeneration:
         for i, pixel in enumerate(self.pixel_list):
             slm_image = self.subdivided_pixel(pixel)
             slm_image_filename = f"pattern_{i+1}.png"
-            slm_image_filepath = os.path.join(self.filepath, slm_image_filename)
+            slm_image_filepath = os.path.join(self.filepath_output, slm_image_filename)
             slm_image.save(slm_image_filepath)
             print(f"image {i} saved")
 
@@ -201,7 +202,7 @@ class PatternGeneration:
         """
         # Create a new CSV file and write the added RGB values to it
         filename_added_RGB = "added_RGB_values.csv"
-        added_RGB_values_path = os.path.join(self.filepath, filename_added_RGB)
+        added_RGB_values_path = os.path.join(self.filepath_output, filename_added_RGB)
 
         with open(added_RGB_values_path, 'w', newline='') as csv_file:
             csv_writer = csv.writer(csv_file)
@@ -212,7 +213,7 @@ class PatternGeneration:
 
         # Specify the input and output file paths
         filename_dataset = "dataset.csv"
-        dataset_path = os.path.join(self.filepath, filename_dataset)
+        dataset_path = os.path.join(self.filepath_output, filename_dataset)
 
         # Calculate new coordinates without relying on added_RGB_values.csv
         coordinates = calculate_coordinates(self.image_height, self.image_width, self.slm)
