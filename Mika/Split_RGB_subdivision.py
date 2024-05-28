@@ -296,6 +296,7 @@ def calculate_coordinates(rows, columns, slm):
 
     return points
 
+
 if __name__ == "__main__":
     PatternGeneration()
     print("Process completed")
