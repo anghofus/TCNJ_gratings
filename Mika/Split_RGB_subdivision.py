@@ -4,6 +4,7 @@ import os
 from scipy import signal
 import csv
 
+
 class PatternGeneration:
     def __init__(self):
         """
@@ -56,7 +57,7 @@ class PatternGeneration:
             slm_image_filename = f"pattern_{i+1}.png"
             slm_image_filepath = os.path.join(self.filepath_output, slm_image_filename)
             slm_image.save(slm_image_filepath)
-            print(f"image {i} saved")
+            print(f"image {i} saved, {i} of {len(self.pixel_list)}")
 
     def subdivided_pixel(self, rgb_color: list):
         """
