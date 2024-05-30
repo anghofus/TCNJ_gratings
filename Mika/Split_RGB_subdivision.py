@@ -14,7 +14,7 @@ class PatternGeneration:
         # Set the file path and image filename
         self.filepath_output = os.getcwd()
         self.filepath_input = os.getcwd()
-        filename_image = "test.png"
+        filename_image = "full_spektrum_gradient+white-270x270.png"
 
         # Define dimensions for subpixels and SLM (spatial light modulator)
         self.subpixel_width = 576
@@ -279,10 +279,11 @@ def calculate_coordinates(rows, columns, slm):
     Returns:
     list: A list of coordinate tuples.
     """
+    slm_y = slm * (145 / 242)
     points = []
     # Initialize starting coordinates
     start_x = ((columns / 2) - 1) * slm + slm / 2
-    start_y = -(((rows / 2) - 1) * slm + slm / 2)
+    start_y = -(((rows / 2) - 1) * slm_y + slm_y / 2)
 
     for row in range(rows):
         for col in range(columns):
@@ -294,7 +295,7 @@ def calculate_coordinates(rows, columns, slm):
                 start_x += slm if (row % 2 != 0) else 0
 
         # Update y-coordinate at the end of each row
-        start_y += slm * (145 / 242)
+        start_y += slm_y
 
     return points
 
