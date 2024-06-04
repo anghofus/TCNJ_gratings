@@ -14,7 +14,7 @@ class PatternGeneration:
         # Set the file path and image filename
         self.filepath_output = os.getcwd()
         self.filepath_input = os.getcwd()
-        filename_image = "full_spektrum_gradient+white-270x270.png"
+        filename_image = "test.png"
 
         # Define dimensions for subpixels and SLM (spatial light modulator)
         self.subpixel_width = 576
@@ -57,7 +57,7 @@ class PatternGeneration:
             slm_image_filename = f"pattern_{i+1}.png"
             slm_image_filepath = os.path.join(self.filepath_output, slm_image_filename)
             slm_image.save(slm_image_filepath)
-            print(f"image {i} saved, {i} of {len(self.pixel_list)}")
+            print(f"image {i+1} of {len(self.pixel_list)} saved")
 
     def subdivided_pixel(self, rgb_color: list):
         """
