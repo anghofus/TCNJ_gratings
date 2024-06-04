@@ -130,6 +130,7 @@ class PatternGeneration:
         """
         assert 0 <= i <= 5, "i can only be between 0 and 5"
 
+        # Define coordinates for each subpixel placement based on index
         current_subpixel = self.subpixel_list[i]
 
         # Define coordinates for each subpixel placement based on index
@@ -145,12 +146,9 @@ class PatternGeneration:
         # Get the starting coordinates for the subpixel
         x_coordinate, y_coordinate = coordinates[i]
 
-        # Place the current subpixel into the main pixel grid
-        for y in range(self.subpixel_height):
-            for x in range(self.subpixel_width):
-                target_x = x_coordinate + x
-                target_y = y_coordinate + y
-                self.pixel[target_y][target_x] = current_subpixel[y][x]
+        # Place the entire subpixel matrix into the main pixel grid at once
+        self.pixel[y_coordinate:y_coordinate + self.subpixel_height,
+        x_coordinate:x_coordinate + self.subpixel_width] = current_subpixel
 
     def rgb_array_to_pixel_list(self, rgb_array):
         """
