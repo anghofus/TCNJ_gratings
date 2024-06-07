@@ -870,7 +870,7 @@ class SLMManager:
                                       offset_z_scale=offset_z_scale, columns_entry=columns_entry,
                                       columns_scale=columns_scale, rows_entry=rows_entry, rows_scale=rows_scale)
 
-        # Save Settings Button
+        # Save SetOtings Button
         Button(popup, text="Save Settings",
                command=lambda: self.save_settings(popup, speed=speed_entry.get(), offset_x=offset_x_entry.get(),
                                                   offset_z=offset_z_entry.get(), columns=columns_entry.get(),

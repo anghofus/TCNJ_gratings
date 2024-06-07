@@ -242,8 +242,9 @@ class MotorController:
         self.length_movement = 0
 
         # Stuff for Stitching:
-        self.SLM_stitching_pixel = 484
-        self.SLM_stitching_half_pixel = (self.SLM_stitching_pixel / 2)
+        self.SLM_stitching_pixel_X = 484
+        self.SLM_stitching_pixel_Z = 290
+        self.SLM_stitching_half_pixel = (self.SLM_stitching_pixel_X / 2)
 
         # Stuff needed explicitly for Printing:
         self.SLM_printing_pixel = 480
@@ -1341,12 +1342,12 @@ class MotorController:
         self.height_grading = 0
         self.width_grading = 0
         if mode == 'stitching':
-            self.width_grading = (self.columns * self.SLM_stitching_pixel)
+            self.width_grading = (self.columns * self.SLM_stitching_pixel_X)
             width_grading_print = (self.width_grading / 2)
             print(f'Width in µm: {width_grading_print}')
             width_grading_print = (width_grading_print / 1000)
             print(f'Width in mm: {width_grading_print}')
-            self.height_grading = (self.rows * self.SLM_stitching_pixel)
+            self.height_grading = (self.rows * self.SLM_stitching_pixel_Z)
             height_grading_print = (self.height_grading / 2)
             print(f'Height in µm: {height_grading_print}')
             height_grading_print = (height_grading_print / 1000)
@@ -1393,9 +1394,9 @@ class MotorController:
     def check_borders(self, mode, start_x, start_z, offset_x, offset_z):
         if mode == 'stitching':
             max_x = start_x + offset_x
-            min_x = (start_x + offset_x) - ((self.columns * self.SLM_stitching_pixel) - self.SLM_stitching_pixel)
+            min_x = (start_x + offset_x) - ((self.columns * self.SLM_stitching_pixel_X) - self.SLM_stitching_pixel_X)
             min_z = start_z + offset_z
-            max_z = (start_z + offset_z) + ((self.rows * self.SLM_stitching_pixel) - self.SLM_stitching_pixel)
+            max_z = (start_z + offset_z) + ((self.rows * self.SLM_stitching_pixel_Z) - self.SLM_stitching_pixel_Z)
         elif mode == 'printing':
             max_x = start_x + offset_x
             min_x = (start_x + offset_x) - ((self.columns * self.SLM_printing_pixel) - self.SLM_printing_pixel + self.SLM_printing_offset)
@@ -1427,8 +1428,8 @@ class MotorController:
                 elif stitch == 'relative':
                     if x_value is None or z_value is None:
                         # Calculate new Start so fully in middle
-                        self.start_pos_X = ((self.SLM_stitching_half_pixel * self.columns) - self.SLM_stitching_pixel + self.SLM_stitching_half_pixel)
-                        self.start_pos_Z = (-1 * ((self.SLM_stitching_half_pixel * self.rows) - self.SLM_stitching_pixel + self.SLM_stitching_half_pixel))
+                        self.start_pos_X = ((self.SLM_stitching_half_pixel * self.columns) - self.SLM_stitching_pixel_X + self.SLM_stitching_half_pixel)
+                        self.start_pos_Z = (-1 * ((self.SLM_stitching_half_pixel * self.rows) - self.SLM_stitching_pixel_Z + self.SLM_stitching_half_pixel))
                     else:
                         # int not needed since set later anyway
                         self.start_pos_X = int(x_value)
@@ -1599,13 +1600,13 @@ class MotorController:
                 if current_row < self.rows:
                     if current_row != row_before:
                         # move up on film into positive Z-direction
-                        self.movement(axis='Z', position=self.SLM_stitching_pixel, mode='relative', shape='trapezoidal')
+                        self.movement(axis='Z', position=self.SLM_stitching_pixel_Z, mode='relative', shape='trapezoidal')
                     elif current_row % 2 == 1:
                         # odd rows, move right on film into positive X-direction
-                        self.movement(axis='X', position=self.SLM_stitching_pixel, mode='relative', shape='trapezoidal')
+                        self.movement(axis='X', position=self.SLM_stitching_pixel_X, mode='relative', shape='trapezoidal')
                     elif current_row % 2 == 0:
                         # even rows, move left on film into negative X-direction
-                        self.movement(axis='X', position=(-1 * self.SLM_stitching_pixel), mode='relative', shape='trapezoidal')
+                        self.movement(axis='X', position=(-1 * self.SLM_stitching_pixel_X), mode='relative', shape='trapezoidal')
                     else:
                         raise ValueError("No movement with logic, Error!")
                 else:
