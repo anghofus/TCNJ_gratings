@@ -5,8 +5,8 @@ red = 255
 green = 255
 blue = 0
 
-height = 20
-width = 10
+height = 2
+width = 3
 
 image_array = np.zeros((height, width, 3), dtype=np.uint8)
 print(image_array.shape)

@@ -55,7 +55,7 @@ def image_to_rgb_array(image):
 
 if __name__ == "__main__":
     current_path = os.getcwd()
-    filename = "../test.png"
+    filename = "../subdivision/test.png"
     image = Image.open(os.path.join(current_path, filename))
 
     rgb_array = image_to_rgb_array(image)
