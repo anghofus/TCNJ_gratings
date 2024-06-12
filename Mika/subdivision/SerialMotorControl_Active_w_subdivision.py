@@ -243,7 +243,7 @@ class MotorController:
 
         # Stuff for Stitching:
         self.SLM_stitching_pixel_X = 484
-        self.SLM_stitching_pixel_Z = 290
+        self.SLM_stitching_pixel_Z = 323
         self.SLM_stitching_half_pixel = (self.SLM_stitching_pixel_X / 2)
 
         # Stuff needed explicitly for Printing:
