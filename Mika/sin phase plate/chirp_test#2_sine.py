@@ -1,6 +1,7 @@
 import numpy as np
-import math
 import matplotlib.pyplot as plt
+import scipy
+import math
 
 radius = 5 * 10 ** -3  # in m
 focal_length = 10 * 10 ** -3  # in m
@@ -16,7 +17,7 @@ waveform = []
 
 
 def transmission_function(r):
-    f = np.sin(math.radians((2*np.pi)/(focal_length*wavelength)*r**2))
+    f = scipy.signal.sawtooth(math.radians((2*np.pi)/(focal_length*wavelength)*r**2))
     return f
 
 
