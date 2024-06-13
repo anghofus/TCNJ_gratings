@@ -14,10 +14,10 @@ class PatternGeneration:
         # Set the file path and image filename
         self.filepath_output = os.getcwd()
         self.filepath_input = os.getcwd()
-        filename_image = "full_spektrum_gradient+white-270x270.png"
+        filename_image = "test.png"
 
         # Define dimensions for subpixels and SLM (spatial light modulator)
-        self.subpixel_width = 576
+        self.subpixel_width = 640
         self.subpixel_height = 576
 
         self.pixel_height = 2
@@ -88,7 +88,7 @@ class PatternGeneration:
         # Generate subpixel patterns based on RGB percentages
         for i, rgb in enumerate(rgb_color):
             total = int(rgb[0]) + int(rgb[1]) + int(rgb[2])
-            subpixel = np.zeros((self.subpixel_width, self.subpixel_height))
+            subpixel = np.zeros((self.subpixel_height, self.subpixel_width))
 
             # Calculate widths for each color band within the subpixel
             red_width = int(rgb[0]) / total * self.subpixel_width
@@ -136,12 +136,12 @@ class PatternGeneration:
 
         # Define coordinates for each subpixel placement based on index
         coordinates = [
-            (32, 0),  # for i == 0
-            (672, 0),  # for i == 1
-            (1312, 0),  # for i == 2
-            (32, 576),  # for i == 3
-            (672, 576),  # for i == 4
-            (1312, 576)  # for i == 5
+            (0, 0),  # for i == 0
+            (640, 0),  # for i == 1
+            (1280, 0),  # for i == 2
+            (0, 576),  # for i == 3
+            (640, 576),  # for i == 4
+            (1280, 576)  # for i == 5
         ]
 
         # Get the starting coordinates for the subpixel
