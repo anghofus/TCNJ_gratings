@@ -8,6 +8,7 @@ from PIL import Image
 class PhasePlate1D:
     def __init__(self, radius: float, focal_length: float, wavelength: float, filename: str, filepath: str, slm_width=200):
         self.radius = radius / 1000
+        self.diameter = radius * 2
         self.focal_length = focal_length / 1000
         self.wavelength = wavelength / 10**9
         self.slm_width = slm_width / 10**6
@@ -22,6 +23,7 @@ class PhasePlate1D:
         self.y_peak_to_peak = 128
 
         self.slm_count = int(self.radius / self.slm_width)
+        self.slm_count_diameter = self.slm_count * 2
         self.linespace_width = int(self.slm_count * 1920)
         self.pixel_width = self.radius / self.linespace_width
 
@@ -47,12 +49,13 @@ class PhasePlate1D:
             self.waveform.append(self.chirp_function(r))
 
     def generate_slm_images(self):
+        waveform_diameter = self.waveform[::-1] + self.waveform
         image_array = np.zeros((self.slm_px_height, self.slm_px_width), dtype=np.uint8)
-        for i in range(self.slm_count):
+        for i in range(self.slm_count_diameter):
             start = self.slm_px_width * i
             stop = start + self.slm_px_width
             for j in range(self.slm_px_height):
-                image_array[j] = self.waveform[start:stop]
+                image_array[j] = waveform_diameter[start:stop]
             image = Image.fromarray(image_array)
             image.save(os.path.join(self.filepath_image_folder, f"{self.filename}_{i}.jpg"))
 
