@@ -27,7 +27,7 @@ class YMaxManipulation:
         self.pixel = np.zeros((self.slm_height, self.slm_width))
 
         self.added_RGB_values = []
-        self.y_max_start = 80
+        self.y_max_modifier = 80
 
     def subdivided_pixel(self, rgb_color: list):
         """
@@ -65,7 +65,7 @@ class YMaxManipulation:
                 waveform_green = self.generate_waveform(128, 'green')
                 waveform_blue = self.generate_waveform(128, 'blue')
             else:
-                y_max = normalized_value * self.y_max_start
+                y_max = normalized_value * self.y_max_modifier
                 waveform_red = self.generate_waveform(y_max, 'red')
                 waveform_green = self.generate_waveform(y_max, 'green')
                 waveform_blue = self.generate_waveform(y_max, 'blue')
@@ -144,6 +144,7 @@ class YMaxManipulation:
         # Place the entire subpixel matrix into the main pixel grid at once
         self.pixel[y_coordinate:y_coordinate + self.subpixel_height,
         x_coordinate:x_coordinate + self.subpixel_width] = current_subpixel
+
 
 if __name__ == "__main__":
     pass
