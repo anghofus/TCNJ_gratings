@@ -25,6 +25,10 @@ class YMaxManipulation:
 
         self.subpixel_list = []
         self.pixel = np.zeros((self.slm_height, self.slm_width))
+
+        self.added_RGB_values = []
+        self.y_max_start = 80
+
     def subdivided_pixel(self, rgb_color: list):
         """
         Create subdivided pixels based on the given color list.
@@ -44,6 +48,7 @@ class YMaxManipulation:
 
         max_value = max(total_values)
 
+        self.added_RGB_values.append(max_value)
 
         # Generate subpixel patterns based on RGB percentages
         for i, rgb in enumerate(rgb_color):
@@ -60,7 +65,7 @@ class YMaxManipulation:
                 waveform_green = self.generate_waveform(128, 'green')
                 waveform_blue = self.generate_waveform(128, 'blue')
             else:
-                y_max = normalized_value * 80
+                y_max = normalized_value * self.y_max_start
                 waveform_red = self.generate_waveform(y_max, 'red')
                 waveform_green = self.generate_waveform(y_max, 'green')
                 waveform_blue = self.generate_waveform(y_max, 'blue')
@@ -141,3 +146,4 @@ class YMaxManipulation:
         x_coordinate:x_coordinate + self.subpixel_width] = current_subpixel
 
 if __name__ == "__main__":
+    pass
