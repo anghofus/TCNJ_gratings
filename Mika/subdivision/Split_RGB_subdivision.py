@@ -14,7 +14,7 @@ class PatternGeneration:
         # Set the file path and image filename
         self.filepath_output = os.getcwd()
         self.filepath_input = os.getcwd()
-        filename_image = "test.png"
+        filename_image = "test2.png"
 
         # Define dimensions for subpixels and SLM (spatial light modulator)
         self.subpixel_width = 640
@@ -33,6 +33,7 @@ class PatternGeneration:
         self.x_max_green = 32.7
         self.x_max_blue = 30
         self.y_max = 128
+        self.y_max_modifier = 80
 
         # Initialize subpixel list and main pixel grid
         self.subpixel_list = []
@@ -49,8 +50,7 @@ class PatternGeneration:
         # Convert image to an RGB array
         self.rgb_array = image_to_rgb_array(image)
         self.pixel_list = self.rgb_array_to_pixel_list(self.rgb_array)
-        self.added_RGB_values = self.generate_added_RGB_values()
-        self.create_csv()
+        self.added_RGB_values = []
 
         # Generate and save subdivided pixel patterns for each pixel
         for i, pixel in enumerate(self.pixel_list):
@@ -59,6 +59,8 @@ class PatternGeneration:
             slm_image_filepath = os.path.join(self.filepath_output, slm_image_filename)
             slm_image.save(slm_image_filepath)
             print(f"image {i+1} of {len(self.pixel_list)} saved")
+
+        self.create_csv()
 
     def subdivided_pixel(self, rgb_color: list):
         """
@@ -72,27 +74,34 @@ class PatternGeneration:
         """
         assert len(rgb_color) == 6, "color list must have 6 entries"
 
-        # Generate time array for the waveforms
-        t = np.linspace(0, self.subpixel_width, self.subpixel_width)
+        total_values = []
+        for subpixel in rgb_color:
+            total_value = int(subpixel[0]) + int(subpixel[1]) + int(subpixel[2])
+            total_values.append(total_value)
 
-        # Define the angular frequencies for the waveforms based on max values
-        omega_red = 2 * np.pi * 1 / self.x_max_red
-        omega_green = 2 * np.pi * 1 / self.x_max_green
-        omega_blue = 2 * np.pi * 1 / self.x_max_blue
+        max_value = max(total_values)
 
-        # Generate the waveforms for each color channel using a sawtooth wave
-        waveform_red = (1 + signal.sawtooth(omega_red * t)) * self.y_max / 2
-        waveform_green = (1 + signal.sawtooth(omega_green * t)) * self.y_max / 2
-        waveform_blue = (1 + signal.sawtooth(omega_blue * t)) * self.y_max / 2
+        self.added_RGB_values.append(max_value)
 
         # Generate subpixel patterns based on RGB percentages
         for i, rgb in enumerate(rgb_color):
-            total = int(rgb[0]) + int(rgb[1]) + int(rgb[2])
+            total = total_values[i]
             subpixel = np.zeros((self.subpixel_height, self.subpixel_width))
 
             # Calculate widths for each color band within the subpixel
             red_width = int(rgb[0]) / total * self.subpixel_width
             green_width = int(rgb[1]) / total * self.subpixel_width
+
+            normalized_value = total / max_value
+            if normalized_value == 1:
+                waveform_red = self.generate_waveform(128, 'red')
+                waveform_green = self.generate_waveform(128, 'green')
+                waveform_blue = self.generate_waveform(128, 'blue')
+            else:
+                y_max = normalized_value * self.y_max_modifier
+                waveform_red = self.generate_waveform(y_max, 'red')
+                waveform_green = self.generate_waveform(y_max, 'green')
+                waveform_blue = self.generate_waveform(y_max, 'blue')
 
             j = 0
             k = 0
@@ -122,6 +131,24 @@ class PatternGeneration:
 
         return image
 
+    def generate_waveform(self, y_max: float, color: str):
+        # Generate time array for the waveforms
+        t = np.linspace(0, self.subpixel_width, self.subpixel_width)
+
+        if color == "red":
+            omega_red = 2 * np.pi * 1 / self.x_max_red
+            waveform = (1 + signal.sawtooth(omega_red * t)) * y_max / 2
+        elif color == "green":
+            omega_green = 2 * np.pi * 1 / self.x_max_green
+            waveform = (1 + signal.sawtooth(omega_green * t)) * y_max / 2
+        elif color == "blue":
+            omega_blue = 2 * np.pi * 1 / self.x_max_blue
+            waveform = (1 + signal.sawtooth(omega_blue * t)) * y_max / 2
+        else:
+            raise ValueError("color can only be 'red', 'green' or 'blue'")
+
+        return waveform
+
     def place_subpixel(self, i: int):
         """
         Place the subpixel in the correct position in the final image.
@@ -136,20 +163,19 @@ class PatternGeneration:
 
         # Define coordinates for each subpixel placement based on index
         coordinates = [
-            (0, 0),  # for i == 0
-            (640, 0),  # for i == 1
-            (1280, 0),  # for i == 2
-            (0, 576),  # for i == 3
-            (640, 576),  # for i == 4
-            (1280, 576)  # for i == 5
+            (0, 0),         # for i == 0
+            (640, 0),       # for i == 1
+            (1280, 0),      # for i == 2
+            (0, 576),       # for i == 3
+            (640, 576),     # for i == 4
+            (1280, 576)     # for i == 5
         ]
 
         # Get the starting coordinates for the subpixel
         x_coordinate, y_coordinate = coordinates[i]
 
         # Place the entire subpixel matrix into the main pixel grid at once
-        self.pixel[y_coordinate:y_coordinate + self.subpixel_height,
-        x_coordinate:x_coordinate + self.subpixel_width] = current_subpixel
+        self.pixel[y_coordinate:y_coordinate + self.subpixel_height, x_coordinate:x_coordinate + self.subpixel_width] = current_subpixel
 
     def rgb_array_to_pixel_list(self, rgb_array):
         """
@@ -185,25 +211,6 @@ class PatternGeneration:
                 target_x = rgb_array_x - sub_pixel_x
                 sub_pixel_color.append(rgb_array[target_y][target_x])
         return sub_pixel_color
-
-    def generate_added_RGB_values(self):
-        """
-        Calculate the sum of RGB values for each pixel and average them.
-
-        Returns:
-        list: A list of averaged RGB values.
-        """
-        added_RGB_values = []
-        for i, pixel in enumerate(self.pixel_list):
-            added_color = []
-            # Sum the RGB values for each subpixel
-            for subpixel in pixel:
-                sum_subpixel = int(subpixel[0]) + int(subpixel[1]) + int(subpixel[2])
-                added_color.append(sum_subpixel)
-            average = sum(added_color) / len(added_color)
-            added_RGB_values.append(average)
-
-        return added_RGB_values
 
     def create_csv(self):
         """

@@ -1,7 +1,7 @@
 import numpy as np
 from PIL import Image
 from scipy import signal
-
+import random
 
 class YMaxManipulation:
     def __init__(self):
@@ -130,21 +130,26 @@ class YMaxManipulation:
 
         # Define coordinates for each subpixel placement based on index
         coordinates = [
-            (0, 0),  # for i == 0
-            (640, 0),  # for i == 1
-            (1280, 0),  # for i == 2
-            (0, 576),  # for i == 3
-            (640, 576),  # for i == 4
-            (1280, 576)  # for i == 5
+            (0, 0),         # for i == 0
+            (640, 0),       # for i == 1
+            (1280, 0),      # for i == 2
+            (0, 576),       # for i == 3
+            (640, 576),     # for i == 4
+            (1280, 576)     # for i == 5
         ]
 
         # Get the starting coordinates for the subpixel
         x_coordinate, y_coordinate = coordinates[i]
 
         # Place the entire subpixel matrix into the main pixel grid at once
-        self.pixel[y_coordinate:y_coordinate + self.subpixel_height,
-        x_coordinate:x_coordinate + self.subpixel_width] = current_subpixel
+        self.pixel[y_coordinate:y_coordinate + self.subpixel_height, x_coordinate:x_coordinate + self.subpixel_width] = current_subpixel
 
 
 if __name__ == "__main__":
-    pass
+    color_list = [(255, 255, 255), (212, 212, 212), (169, 169, 169), (126, 126, 126), (83, 83, 83), (40, 40, 40)]
+    random.shuffle(color_list)
+
+    y_max_manipulation = YMaxManipulation()
+    image = y_max_manipulation.subdivided_pixel(color_list)
+
+    image.show()
