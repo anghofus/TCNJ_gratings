@@ -258,6 +258,7 @@ class PatternGeneration:
 
         print("Both CSV-Sheets have been created")
 
+
 def image_to_rgb_array(image):
     """
     Convert an image to an RGB array.
@@ -287,6 +288,7 @@ def image_to_rgb_array(image):
             rgb_array[y][x] = (red_array[y][x], green_array[y][x], blue_array[y][x])
 
     return rgb_array
+
 
 def calculate_coordinates(rows, columns, slm_x, slm_y):
     """
