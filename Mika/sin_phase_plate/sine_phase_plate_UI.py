@@ -19,7 +19,7 @@ class Settings:
         return self.__diameter
 
     @diameter.setter
-    def diameter(self, value:float):
+    def diameter(self, value: float):
         assert value >= 0, "diameter must be grater than zero!"
         self.__diameter = value
 
@@ -28,7 +28,7 @@ class Settings:
         return self.__focal_length
 
     @focal_length.setter
-    def focal_length(self, value:float):
+    def focal_length(self, value: float):
         assert value >= 0, "focal length must be grater than zero!"
         self.__focal_length = value
 
@@ -37,7 +37,7 @@ class Settings:
         return self.__exposure_time
 
     @exposure_time.setter
-    def exposure_time(self, value:float):
+    def exposure_time(self, value: float):
         assert value >= 0, "Exposure time must be greater than zero!"
         self.__exposure_time = value
 
@@ -46,7 +46,7 @@ class Settings:
         return self.__grating_width
 
     @grating_width.setter
-    def grating_width(self, value:float):
+    def grating_width(self, value: float):
         assert value >= 0, "Grating width must be greater than zero!"
         self.__grating_width = value
 
@@ -55,7 +55,7 @@ class Settings:
         return self.__grating_height
 
     @grating_height.setter
-    def grating_height(self, value:float):
+    def grating_height(self, value: float):
         assert value >= 0, "Grating height must be greater than zero!"
 
     @property
@@ -63,7 +63,7 @@ class Settings:
         return self.__com_laser
 
     @com_laser.setter
-    def com_laser(self, value:str):
+    def com_laser(self, value: str):
         self.__com_laser = value
 
     @property
@@ -71,10 +71,10 @@ class Settings:
         return self.__com_motion_controller
 
     @com_motion_controller.setter
-    def com_motion_controller(self, value:str):
+    def com_motion_controller(self, value: str):
         self.__com_motion_controller = value
 
-    def read_from_jason(self):
+    def read_from_json(self):
         try:
             with open('settings.json', 'r') as settings_file:
                 settings = json.load(settings_file)
@@ -84,9 +84,9 @@ class Settings:
                 self.__com_laser = settings['com_laser']
                 self.__com_motion_controller = settings['com_motion_controller']
         except FileNotFoundError:
-            self.write_to_jason()
+            self.write_to_json()
 
-    def write_to_jason(self):
+    def write_to_json(self):
         with open('settings.json', 'w') as settings_file:
             settings = {
                 'exposure_time': self.__exposure_time,
@@ -118,9 +118,9 @@ class App(tk.Tk):
 
 class StartScreen(ttk.Frame):
     def __init__(self, master, settings):
-        super().__init__(master)
-
+        self.master = master
         self.settings = settings
+        super().__init__(master)
 
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
@@ -134,18 +134,158 @@ class StartScreen(ttk.Frame):
         ttk.Label(self, text="focal length in mm" , font=("Arial", 20)).grid(row=2, column=0, sticky=tk.W, padx=10, pady=10)
 
         self.entry_diameter = ttk.Entry(self)
+        if self.settings.diameter is not None:
+            self.entry_diameter.insert(0, self.settings.diameter)
         self.entry_diameter.grid(row=1, column=1, sticky=tk.W, padx=10)
         self.entry_focal_length = ttk.Entry(self)
+        if self.settings.focal_length is not None:
+            self.entry_focal_length.insert(0, self.settings.focal_length)
         self.entry_focal_length.grid(row=2, column=1, sticky=tk.W, padx=10)
 
-        ttk.Button(self, text="apply").grid(row=3, column=0)
-        ttk.Button(self, text="settings").grid(row=3, column=1)
+        ttk.Button(self, text="apply", command=self.button_apply).grid(row=3, column=0)
+        ttk.Button(self, text="settings", command=self.button_settings).grid(row=3, column=1)
 
         self.grid(row=0, column=0, sticky="nsew")
 
     def button_apply(self):
-        self.settings.diameter = float(self.entry_diameter.get())
-        self.settings.focal_length = float(self.entry_focal_length.get())
+        try:
+            self.settings.diameter = float(self.entry_diameter.get())
+            self.settings.focal_length = float(self.entry_focal_length.get())
+
+            self.grid_forget()
+            FocusingScreen(self.master, self.settings)
+        except Exception as e:
+            pass
+
+    def button_settings(self):
+        self.grid_forget()
+        SettingsScreen(self.master, self.settings)
+
+
+class SettingsScreen(ttk.Frame):
+    def __init__(self, master, settings):
+        self.master = master
+        self.settings = settings
+        super().__init__(master)
+
+        self.settings.read_from_json()
+
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=1)
+        self.grid_rowconfigure(2, weight=1)
+        self.grid_rowconfigure(3, weight=1)
+        self.grid_rowconfigure(4, weight=1)
+        self.grid_rowconfigure(5, weight=1)
+        self.grid_rowconfigure(6, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=1)
+
+        ttk.Label(self, text="settings", font=("Arial", 25)).grid(row=0, column=0, columnspan=2, padx=10,pady=10)
+        ttk.Label(self, text="exposure time in s", font=("Arial", 20)).grid(row=1, column=0, padx=10, sticky=tk.W)
+        ttk.Label(self, text="grating width in µm", font=("Arial", 20)).grid(row=2, column=0, padx=10, sticky=tk.W)
+        ttk.Label(self, text="grating height in µm", font=("Arial", 20)).grid(row=3, column=0, padx=10, sticky=tk.W)
+        ttk.Label(self, text="laser COM", font=("Arial", 20)).grid(row=4, column=0, padx=10, sticky=tk.W)
+        ttk.Label(self, text="motion controler COM", font=("Arial", 20)).grid(row=5, column=0, padx=10, sticky=tk.W)
+
+        self.entry_exposure_time = ttk.Entry(self)
+        self.entry_exposure_time.insert(0, self.settings.exposure_time)
+        self.entry_exposure_time.grid(row=1, column=1, padx=10)
+        self.entry_grating_width = ttk.Entry(self)
+        self.entry_grating_width.insert(0, self.settings.grating_width)
+        self.entry_grating_width.grid(row=2, column=1, padx=10)
+        self.entry_grating_height = ttk.Entry(self)
+        self.entry_grating_height.insert(0, self.settings.grating_height)
+        self.entry_grating_height.grid(row=3, column=1, padx=10)
+        self.entry_laser_COM = ttk.Entry(self)
+        self.entry_laser_COM.insert(0, self.settings.com_laser)
+        self.entry_laser_COM.grid(row=4, column=1, padx=10)
+        self.entry_motion_controller_COM = ttk.Entry(self)
+        self.entry_motion_controller_COM.insert(0, self.settings.com_motion_controller)
+        self.entry_motion_controller_COM.grid(row=5, column=1, padx=10)
+
+        ttk.Button(self, text="apply", command=self.button_apply).grid(row=6, column=0)
+        ttk.Button(self, text="cancel", command=self.button_cancel).grid(row=6, column=1)
+
+        self.grid(row=0, column=0, sticky="nsew")
+
+    def button_apply(self):
+        self.settings.exposure_time = float(self.entry_exposure_time.get())
+        self.settings.grating_width = float(self.entry_grating_width.get())
+        self.settings.grating_height = float(self.entry_grating_height.get())
+        self.settings.com_laser = self.entry_laser_COM.get()
+        self.settings.com_motion_controller = self.entry_motion_controller_COM.get()
+
+        self.settings.write_to_json()
+
+        self.grid_forget()
+        StartScreen(self.master, self.settings)
+
+    def button_cancel(self):
+        self.grid_forget()
+        StartScreen(self.master, self.settings)
+
+
+class FocusingScreen(ttk.Frame):
+    def __init__(self, master, settings):
+        self.master = master
+        self.settings = settings
+        super().__init__(master)
+
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=1)
+        self.grid_rowconfigure(2, weight=1)
+        self.grid_rowconfigure(3, weight=1)
+        self.grid_rowconfigure(4, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=1)
+        self.grid_columnconfigure(2, weight=1)
+
+        ttk.Label(self, text="focusing", font=("Arial", 25)).grid(row=0, column=0, columnspan=3, pady=10)
+
+        ttk.Button(self, text="up").grid(row=1, column=1, sticky=tk.S)
+        ttk.Button(self, text="center").grid(row=2, column=1)
+        ttk.Button(self, text="down").grid(row=3, column=1, sticky=tk.N)
+        ttk.Button(self, text="left").grid(row=2, column=0, sticky=tk.E)
+        ttk.Button(self, text="right").grid(row=2, column=2, sticky=tk.W)
+
+        ttk.Button(self, text="finish", command=self.button_finish).grid(row=4, column=0, columnspan=3)
+
+        self.grid(row=0, column=0, sticky="nsew")
+
+    def button_finish(self):
+        self.grid_forget()
+        ProcessScreen(self.master, self.settings)
+
+
+class ProcessScreen(ttk.Frame):
+    def __init__(self, master, settings):
+        self.master = master
+        self.settings = settings
+        super().__init__(master)
+
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=1)
+        self.grid_rowconfigure(2, weight=1)
+        self.grid_rowconfigure(3, weight=1)
+        self.grid_rowconfigure(4, weight=1)
+        self.grid_rowconfigure(5, weight=1)
+        self.grid_rowconfigure(6, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=1)
+        self.grid_columnconfigure(2, weight=1)
+
+        ttk.Label(self, text="process monitoring", font=("Arial", 25)).grid(row=0, column=0, columnspan=3, pady=10)
+        ttk.Label(self, text="Status:", font=("Arial", 20, 'bold')).grid(row=1, column=0, sticky=tk.E, padx=10)
+        ttk.Label(self, text="Progress:", font=("Arial", 20, 'bold')).grid(row=2, column=0, sticky=tk.E, padx=10)
+        ttk.Label(self, text="Time left:", font=("Arial", 20, 'bold')).grid(row=3, column=0, sticky=tk.E, padx=10)
+        ttk.Label(self, text="Angular velocity:", font=("Arial", 20, 'bold')).grid(row=4, column=0, sticky=tk.E, padx=10)
+        ttk.Label(self, text="Position:", font=("Arial", 20, 'bold')).grid(row=5, column=0, sticky=tk.E, padx=10)
+
+        ttk.Button(self, text="Continue").grid(row=6, column=0, columnspan=3, sticky=tk.W, padx=50)
+        ttk.Button(self, text="Pause").grid(row=6, column=0, columnspan=3, padx=10)
+        ttk.Button(self, text="Cancel").grid(row=6, column=0, columnspan=3, sticky=tk.E, padx=50)
+
+        self.grid(row=0, column=0, sticky="nsew")
 
 
 if __name__ == "__main__":
