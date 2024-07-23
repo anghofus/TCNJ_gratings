@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 import json
+from sine_phase_plate_backend import *
 
 
 class Settings:
@@ -11,6 +12,9 @@ class Settings:
         self.__exposure_time = 5
         self.__grating_width = 70
         self.__grating_height = 40
+        self.__wavelength = 633
+        self.__y_min = 0
+        self.__y_peak_to_peak = 128
         self.__com_laser = "COM1"
         self.__com_motion_controller = "COM2"
 
@@ -59,6 +63,33 @@ class Settings:
         assert value >= 0, "Grating height must be greater than zero!"
 
     @property
+    def wavelength(self):
+        return self.__wavelength
+
+    @wavelength.setter
+    def wavelength(self, value: float):
+        assert value >= 0, "wavelength must be greater than zero!"
+        self.__wavelength = value
+
+    @property
+    def y_min(self):
+        return self.__y_min
+
+    @y_min.setter
+    def y_min(self, value):
+        assert 0 <= value <= 255, "y_min must be between 0 and 255"
+        self.__y_min = value
+
+    @property
+    def y_peak_to_peak(self):
+        return self.__y_peak_to_peak
+
+    @y_peak_to_peak.setter
+    def y_peak_to_peak(self, value):
+        assert 0 <= value <= 255, "y_peak_to_peak must be between 0 and 255"
+        self.__y_peak_to_peak = value
+
+    @property
     def com_laser(self):
         return self.__com_laser
 
@@ -81,6 +112,7 @@ class Settings:
                 self.__exposure_time = settings['exposure_time']
                 self.__grating_width = settings['grating_width']
                 self.__grating_height = settings['grating_height']
+                self.__wavelength = settings['wavelength']
                 self.__com_laser = settings['com_laser']
                 self.__com_motion_controller = settings['com_motion_controller']
         except FileNotFoundError:
@@ -92,6 +124,7 @@ class Settings:
                 'exposure_time': self.__exposure_time,
                 'grating_width': self.__grating_width,
                 'grating_height': self.__grating_height,
+                'wavelength': self.__wavelength,
                 'com_laser': self.__com_laser,
                 'com_motion_controller': self.__com_motion_controller
             }
@@ -177,15 +210,21 @@ class SettingsScreen(ttk.Frame):
         self.grid_rowconfigure(4, weight=1)
         self.grid_rowconfigure(5, weight=1)
         self.grid_rowconfigure(6, weight=1)
+        self.grid_rowconfigure(7, weight=1)
+        self.grid_rowconfigure(8, weight=1)
+        self.grid_rowconfigure(9, weight=1)
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
 
         ttk.Label(self, text="settings", font=("Arial", 25)).grid(row=0, column=0, columnspan=2, padx=10,pady=10)
         ttk.Label(self, text="exposure time in s", font=("Arial", 20)).grid(row=1, column=0, padx=10, sticky=tk.W)
         ttk.Label(self, text="grating width in µm", font=("Arial", 20)).grid(row=2, column=0, padx=10, sticky=tk.W)
-        ttk.Label(self, text="grating height in µm", font=("Arial", 20)).grid(row=3, column=0, padx=10, sticky=tk.W)
-        ttk.Label(self, text="laser COM", font=("Arial", 20)).grid(row=4, column=0, padx=10, sticky=tk.W)
-        ttk.Label(self, text="motion controler COM", font=("Arial", 20)).grid(row=5, column=0, padx=10, sticky=tk.W)
+        ttk.Label(self, text="wavelength in nm", font=("Arial", 20)).grid(row=3, column=0, padx=10, sticky=tk.W)
+        ttk.Label(self, text="y_min", font=("Arial", 20)).grid(row=4, column=0, padx=10, sticky=tk.W)
+        ttk.Label(self, text="y_peak_to_peak", font=("Arial", 20)).grid(row=5, column=0, padx=10, sticky=tk.W)
+        ttk.Label(self, text="grating height in µm", font=("Arial", 20)).grid(row=6, column=0, padx=10, sticky=tk.W)
+        ttk.Label(self, text="laser COM", font=("Arial", 20)).grid(row=7, column=0, padx=10, sticky=tk.W)
+        ttk.Label(self, text="motion controller COM", font=("Arial", 20)).grid(row=8, column=0, padx=10, sticky=tk.W)
 
         self.entry_exposure_time = ttk.Entry(self)
         self.entry_exposure_time.insert(0, self.settings.exposure_time)
@@ -196,15 +235,24 @@ class SettingsScreen(ttk.Frame):
         self.entry_grating_height = ttk.Entry(self)
         self.entry_grating_height.insert(0, self.settings.grating_height)
         self.entry_grating_height.grid(row=3, column=1, padx=10)
+        self.entry_wavelength = ttk.Entry(self)
+        self.entry_wavelength.insert(0, self.settings.wavelength)
+        self.entry_wavelength.grid(row=4, column=1, padx=10)
+        self.entry_y_min = ttk.Entry(self)
+        self.entry_y_min.insert(0, self.settings.y_min)
+        self.entry_y_min.grid(row=5, column=1, padx=10)
+        self.entry_y_peak_to_peak = ttk.Entry(self)
+        self.entry_y_peak_to_peak.insert(0, self.settings.y_peak_to_peak)
+        self.entry_y_peak_to_peak.grid(row=6, column=1, padx=10)
         self.entry_laser_COM = ttk.Entry(self)
         self.entry_laser_COM.insert(0, self.settings.com_laser)
-        self.entry_laser_COM.grid(row=4, column=1, padx=10)
+        self.entry_laser_COM.grid(row=7, column=1, padx=10)
         self.entry_motion_controller_COM = ttk.Entry(self)
         self.entry_motion_controller_COM.insert(0, self.settings.com_motion_controller)
-        self.entry_motion_controller_COM.grid(row=5, column=1, padx=10)
+        self.entry_motion_controller_COM.grid(row=8, column=1, padx=10)
 
-        ttk.Button(self, text="apply", command=self.button_apply).grid(row=6, column=0)
-        ttk.Button(self, text="cancel", command=self.button_cancel).grid(row=6, column=1)
+        ttk.Button(self, text="apply", command=self.button_apply).grid(row=9, column=0)
+        ttk.Button(self, text="cancel", command=self.button_cancel).grid(row=9, column=1)
 
         self.grid(row=0, column=0, sticky="nsew")
 
@@ -212,6 +260,9 @@ class SettingsScreen(ttk.Frame):
         self.settings.exposure_time = float(self.entry_exposure_time.get())
         self.settings.grating_width = float(self.entry_grating_width.get())
         self.settings.grating_height = float(self.entry_grating_height.get())
+        self.settings.wavelength = float(self.entry_wavelength.get())
+        self.settings.y_min = int(self.entry_y_min.get())
+        self.settings.y_peak_to_peak = int(self.entry_y_peak_to_peak.get())
         self.settings.com_laser = self.entry_laser_COM.get()
         self.settings.com_motion_controller = self.entry_motion_controller_COM.get()
 
