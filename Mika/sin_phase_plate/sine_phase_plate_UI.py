@@ -164,7 +164,7 @@ class StartScreen(ttk.Frame):
 
         ttk.Label(self, text="lens parameters", font=("Arial", 25)).grid(row=0, column=0, columnspan=2, padx=10,pady=10)
         ttk.Label(self, text="diameter in mm", font=("Arial", 20)).grid(row=1, column=0, sticky=tk.W, padx=10, pady=10)
-        ttk.Label(self, text="focal length in mm" , font=("Arial", 20)).grid(row=2, column=0, sticky=tk.W, padx=10, pady=10)
+        ttk.Label(self, text="focal length in mm", font=("Arial", 20)).grid(row=2, column=0, sticky=tk.W, padx=10, pady=10)
 
         self.entry_diameter = ttk.Entry(self)
         if self.settings.diameter is not None:
