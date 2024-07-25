@@ -4,6 +4,7 @@ import scipy
 from PIL import Image
 
 
+
 def calculate_angular_speed(time, grating_height, radius):
     return grating_height/(time * radius)
 
@@ -13,21 +14,21 @@ class SinePhasePlateGeneration:
                  radius: float,
                  focal_length: float,
                  wavelength: float,
-                 slm_width: int,
+                 grating_width: int,
                  y_min: int,
                  y_peak_to_peak: int):
 
         self.__radius = radius / 1000
         self.__focal_length = focal_length / 1000
         self.__wavelength = wavelength / 10 ** 9
-        self.__slm_width = slm_width / 10 ** 6
+        self.__grating_width = grating_width / 10 ** 6
 
         self.__slm_px_width = 1920
         self.__slm_px_height = 1200
         self.__y_min = y_min
         self.__y_peak_to_peak = y_peak_to_peak
 
-        self.__slm_count = int(self.__radius / self.__slm_width)
+        self.__slm_count = int(self.__radius / self.__grating_width)
         self.__slm_count_diameter = self.__slm_count * 2
         self.__linespace_width = int(self.__slm_count * 1920)
         self.__pixel_width = self.__radius / self.__linespace_width
@@ -68,7 +69,7 @@ class SinePhasePlateGeneration:
             self.__waveform.append(self.__chirp_function(r))
 
     def __generate_slm_images(self):
-        images= []
+        images = []
         image_array = np.zeros((self.__slm_px_height, self.__slm_px_width), dtype=np.uint8)
         for i in range(self.__slm_count):
             start = self.__slm_px_width * i
@@ -82,3 +83,5 @@ class SinePhasePlateGeneration:
     def __chirp_function(self, r):
         f = self.__y_min + ((1 + scipy.signal.sawtooth(math.radians((2 * np.pi) / (self.__focal_length * self.__wavelength) * r ** 2))) / 2) * self.__y_peak_to_peak
         return f
+
+

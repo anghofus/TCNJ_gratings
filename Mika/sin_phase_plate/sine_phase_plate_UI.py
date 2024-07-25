@@ -2,11 +2,14 @@ import tkinter as tk
 from tkinter import ttk
 import json
 from sine_phase_plate_backend import *
+import screeninfo
+from PIL import Image, ImageTk
+from time import sleep
 
 
 class Settings:
     def __init__(self):
-        self.__diameter = None
+        self.__radius = None
         self.__focal_length = None
 
         self.__exposure_time = 5
@@ -19,13 +22,13 @@ class Settings:
         self.__com_motion_controller = "COM2"
 
     @property
-    def diameter(self):
-        return self.__diameter
+    def radius(self):
+        return self.__radius
 
-    @diameter.setter
-    def diameter(self, value: float):
-        assert value >= 0, "diameter must be grater than zero!"
-        self.__diameter = value
+    @radius.setter
+    def radius(self, value: float):
+        assert value >= 0, "radius must be grater than zero!"
+        self.__radius = value
 
     @property
     def focal_length(self):
@@ -113,6 +116,8 @@ class Settings:
                 self.__grating_width = settings['grating_width']
                 self.__grating_height = settings['grating_height']
                 self.__wavelength = settings['wavelength']
+                self.__y_min = settings['y_min']
+                self.__y_peak_to_peak = settings['y_peak_to_peak']
                 self.__com_laser = settings['com_laser']
                 self.__com_motion_controller = settings['com_motion_controller']
         except FileNotFoundError:
@@ -125,10 +130,46 @@ class Settings:
                 'grating_width': self.__grating_width,
                 'grating_height': self.__grating_height,
                 'wavelength': self.__wavelength,
+                'y_min': self.__y_min,
+                'y_peak_to_peak': self.__y_peak_to_peak,
                 'com_laser': self.__com_laser,
                 'com_motion_controller': self.__com_motion_controller
             }
             json.dump(settings, settings_file, indent=4)
+
+
+class ImageDisplay(tk.Toplevel):
+    def __init__(self, monitor):
+        assert monitor > 0, "Monitor must be greater than zero!"
+
+        super().__init__()
+
+        # Get information about all monitors
+        monitors = screeninfo.get_monitors()
+
+        if len(monitors) < 2:
+            raise NoSecondMonitorError("No second monitor found")
+
+        # Assume the second monitor is at index 1
+        second_monitor = monitors[monitor]
+
+        self.geometry(f"{second_monitor.width}x{second_monitor.height}+{second_monitor.x}+{second_monitor.y}")
+        self.attributes("-fullscreen", True)
+        self.configure(background='black')
+
+    def show_image(self, image_object):
+        assert isinstance(image_object, Image.Image), "Image must be a PIL Image object"
+
+        photo = ImageTk.PhotoImage(image_object)
+
+        # Create a label to hold the image
+        label = tk.Label(self, image=photo)
+        label.image = photo  # Keep a reference to avoid garbage collection
+        label.pack()
+
+
+class NoSecondMonitorError(Exception):
+    pass
 
 
 class App(tk.Tk):
@@ -163,13 +204,13 @@ class StartScreen(ttk.Frame):
         self.grid_rowconfigure(3, weight=1)
 
         ttk.Label(self, text="lens parameters", font=("Arial", 25)).grid(row=0, column=0, columnspan=2, padx=10,pady=10)
-        ttk.Label(self, text="diameter in mm", font=("Arial", 20)).grid(row=1, column=0, sticky=tk.W, padx=10, pady=10)
+        ttk.Label(self, text="radius in mm", font=("Arial", 20)).grid(row=1, column=0, sticky=tk.W, padx=10, pady=10)
         ttk.Label(self, text="focal length in mm", font=("Arial", 20)).grid(row=2, column=0, sticky=tk.W, padx=10, pady=10)
 
-        self.entry_diameter = ttk.Entry(self)
-        if self.settings.diameter is not None:
-            self.entry_diameter.insert(0, self.settings.diameter)
-        self.entry_diameter.grid(row=1, column=1, sticky=tk.W, padx=10)
+        self.entry_radius = ttk.Entry(self)
+        if self.settings.radius is not None:
+            self.entry_radius.insert(0, self.settings.radius)
+        self.entry_radius.grid(row=1, column=1, sticky=tk.W, padx=10)
         self.entry_focal_length = ttk.Entry(self)
         if self.settings.focal_length is not None:
             self.entry_focal_length.insert(0, self.settings.focal_length)
@@ -182,7 +223,7 @@ class StartScreen(ttk.Frame):
 
     def button_apply(self):
         try:
-            self.settings.diameter = float(self.entry_diameter.get())
+            self.settings.radius = float(self.entry_radius.get())
             self.settings.focal_length = float(self.entry_focal_length.get())
 
             self.grid_forget()
@@ -219,10 +260,10 @@ class SettingsScreen(ttk.Frame):
         ttk.Label(self, text="settings", font=("Arial", 25)).grid(row=0, column=0, columnspan=2, padx=10,pady=10)
         ttk.Label(self, text="exposure time in s", font=("Arial", 20)).grid(row=1, column=0, padx=10, sticky=tk.W)
         ttk.Label(self, text="grating width in µm", font=("Arial", 20)).grid(row=2, column=0, padx=10, sticky=tk.W)
-        ttk.Label(self, text="wavelength in nm", font=("Arial", 20)).grid(row=3, column=0, padx=10, sticky=tk.W)
-        ttk.Label(self, text="y_min", font=("Arial", 20)).grid(row=4, column=0, padx=10, sticky=tk.W)
-        ttk.Label(self, text="y_peak_to_peak", font=("Arial", 20)).grid(row=5, column=0, padx=10, sticky=tk.W)
-        ttk.Label(self, text="grating height in µm", font=("Arial", 20)).grid(row=6, column=0, padx=10, sticky=tk.W)
+        ttk.Label(self, text="grating height in µm", font=("Arial", 20)).grid(row=3, column=0, padx=10, sticky=tk.W)
+        ttk.Label(self, text="wavelength in nm", font=("Arial", 20)).grid(row=4, column=0, padx=10, sticky=tk.W)
+        ttk.Label(self, text="y_min", font=("Arial", 20)).grid(row=5, column=0, padx=10, sticky=tk.W)
+        ttk.Label(self, text="y_peak_to_peak", font=("Arial", 20)).grid(row=6, column=0, padx=10, sticky=tk.W)
         ttk.Label(self, text="laser COM", font=("Arial", 20)).grid(row=7, column=0, padx=10, sticky=tk.W)
         ttk.Label(self, text="motion controller COM", font=("Arial", 20)).grid(row=8, column=0, padx=10, sticky=tk.W)
 
@@ -314,6 +355,16 @@ class ProcessScreen(ttk.Frame):
         self.settings = settings
         super().__init__(master)
 
+        self.generator = SinePhasePlateGeneration(self.settings.radius,
+                                                  self.settings.focal_length,
+                                                  self.settings.wavelength,
+                                                  self.settings.grating_width,
+                                                  self.settings.y_min,
+                                                  self.settings.y_peak_to_peak)
+
+        self.images = self.generator.generate_images()
+        self.current_image = None
+
         self.grid_rowconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
         self.grid_rowconfigure(2, weight=1)
@@ -332,11 +383,20 @@ class ProcessScreen(ttk.Frame):
         ttk.Label(self, text="Angular velocity:", font=("Arial", 20, 'bold')).grid(row=4, column=0, sticky=tk.E, padx=10)
         ttk.Label(self, text="Position:", font=("Arial", 20, 'bold')).grid(row=5, column=0, sticky=tk.E, padx=10)
 
-        ttk.Button(self, text="Continue").grid(row=6, column=0, columnspan=3, sticky=tk.W, padx=50)
-        ttk.Button(self, text="Pause").grid(row=6, column=0, columnspan=3, padx=10)
+        ttk.Button(self, text="Start", command=self.button_start).grid(row=6, column=0, columnspan=3, sticky=tk.W, padx=50)
+        ttk.Button(self, text="Pause", command=self.button_pause).grid(row=6, column=0, columnspan=3, padx=10)
         ttk.Button(self, text="Cancel").grid(row=6, column=0, columnspan=3, sticky=tk.E, padx=50)
 
         self.grid(row=0, column=0, sticky="nsew")
+
+    def button_start(self):
+        image = self.images[-1]
+        self.current_image = ImageDisplay(1)
+        self.current_image.show_image(image)
+
+    def button_pause(self):
+        if self.current_image:
+            self.current_image.destroy()
 
 
 if __name__ == "__main__":
