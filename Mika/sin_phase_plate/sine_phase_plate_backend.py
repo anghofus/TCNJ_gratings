@@ -4,7 +4,6 @@ import scipy
 from PIL import Image
 
 
-
 def calculate_angular_speed(time, grating_height, radius):
     return grating_height/(time * radius)
 
