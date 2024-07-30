@@ -213,20 +213,17 @@ class PrepSLM:
             modified_data.append([self.added_RGB_values[i]] + [int(coord) for coord in coordinates[i]])
 
         # Open the CSV file for writing
-        with open(dataset_path, 'w', newline='') as output
+        with open(dataset_path, 'w', newline='') as output_file:
+            # Write the header row
+            writer = csv.writer(output_file)
+            writer.writerow(["addedRGB", "X", "Z"])
+            # Write the modified data
+            writer.writerows(modified_data)
 
+        print("Both CSV-Sheets have been created")
 
-_file:
-# Write the header row
-writer = csv.writer(output_file)
-writer.writerow(["addedRGB", "X", "Z"])
-# Write the modified data
-writer.writerows(modified_data)
-
-print("Both CSV-Sheets have been created")
 
 if __name__ == "__main__":
     prep_slm = PrepSLM()
     prep_slm.image_creator()
     prep_slm.create_csv()
-```
