@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import scipy.optimize as opt
 import csv
+import numpy as np
 
 
 def fit_func(x, a, b):
@@ -25,22 +26,37 @@ while i < len(period):
     else:
         i += 1
 
+x_max = np.array(x_max)
+period = np.array(period)
+
 constants = opt.curve_fit(fit_func, x_max, period)
 a, b = constants[0]
 
-fit = []
-for i in x_max:
-    fit.append(fit_func(i, a, b))
+# Calculate the fitted values
+fit = fit_func(x_max, a, b)
 
+# Calculate the residuals
+residuals = period - fit
 
-plt.figure(figsize=(6, 4))
-plt.plot(x_max, fit, label=f'fit (y={a:2f}*x{b:2f})')
+# Plot the data and the fit
+plt.figure(figsize=(10, 6))
+
+plt.subplot(2, 1, 1)
+plt.plot(x_max, period, 'b.', label='data')
+plt.plot(x_max, fit, 'r-', label=f'fit: a={a:.2f}, b={b:.2f}')
 plt.xlabel("x_max value")
 plt.ylabel("period in µm")
 plt.title("x_max study")
-plt.grid(linestyle='--')
-plt.plot(x_max, period, '.', label='data')
-
 plt.legend()
+plt.grid(True)
 
-plt.savefig("x_max_study.png")
+plt.subplot(2, 1, 2)
+plt.plot(x_max, residuals, 'g.', label='residuals')
+plt.xlabel("x_max value")
+plt.ylabel("Residuals")
+plt.legend()
+plt.grid(True)
+
+plt.tight_layout()
+plt.savefig("x_max_study_linear_fit.png")
+plt.show()
