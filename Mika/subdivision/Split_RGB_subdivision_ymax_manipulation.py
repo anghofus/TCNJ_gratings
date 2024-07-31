@@ -40,7 +40,7 @@ class PatternGeneration:
         self.pixel = np.zeros((self.slm_height, self.slm_width))
 
         # Load and validate the image
-        image = Image.open(os.path.join(self.filepath_input, filename_image))
+        image = Image.open(os.path.join(self.filepath_input, filename_image)).rotate(90, expand=1)
         if image.size > (270, 270):
             raise Exception("Image must have a resolution of 270x270 or less")
 

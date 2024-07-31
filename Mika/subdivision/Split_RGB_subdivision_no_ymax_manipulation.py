@@ -14,7 +14,7 @@ class PatternGeneration:
         # Set the file path and image filename
         self.filepath_output = os.getcwd()
         self.filepath_input = os.getcwd()
-        filename_image = "test.png"
+        filename_image = "apt_logo_270px.png"
 
         # Define dimensions for subpixels and SLM (spatial light modulator)
         self.subpixel_width = 640
@@ -39,7 +39,10 @@ class PatternGeneration:
         self.pixel = np.zeros((self.slm_height, self.slm_width))
 
         # Load and validate the image
-        image = Image.open(os.path.join(self.filepath_input, filename_image))
+        image = Image.open(os.path.join(self.filepath_input, filename_image)).rotate(90, expand=1)
+
+        image.show()
+
         if image.size > (270, 270):
             raise Exception("Image must have a resolution of 270x270 or less")
 
