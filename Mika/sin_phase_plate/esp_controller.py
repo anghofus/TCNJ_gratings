@@ -18,10 +18,14 @@ class ESPController:
             stopbits=serial.STOPBITS_ONE,
             bytesize=serial.EIGHTBITS,
             rtscts=True,
-            timeout=5
+            timeout=1
         )
 
-    def __send_command_no_error_check(self, command: str, xx_parameter=None, nn_parameter=None):
+    def close_connection(self):
+        self.ser.close()
+        del self
+
+    def send_command_no_error_check(self, command: str, xx_parameter=None, nn_parameter=None, debug=False):
         """
         Sends a command to the serial device with optional parameters and returns the response.
 
@@ -29,6 +33,7 @@ class ESPController:
             command (str): A string command that must be 2 or fewer characters long.
             xx_parameter (int, optional): An integer to prepend to the command. Defaults to an empty string if not provided.
             nn_parameter (int or float, optional): An integer or float to append to the command. Defaults to an empty string if not provided.
+            debug (bool, optional): A flag to activate the debug mode. If activated prints the command.
 
         Returns:
             str: The response from the serial device as a string.
@@ -40,18 +45,20 @@ class ESPController:
         """
         assert 0 < len(command) <= 2, "command must be 2 or fewer characters"
         assert xx_parameter is None or isinstance(xx_parameter, int), "xx_parameter must be an integer"
-        assert nn_parameter is None or isinstance(nn_parameter, (int, float)), "nn_parameter must be an integer or float"
+        assert nn_parameter is None or isinstance(nn_parameter, (int, float, str)), "nn_parameter must be an integer, float or str"
 
         xx_str = str(xx_parameter) if xx_parameter is not None else ''
         nn_str = str(nn_parameter) if nn_parameter is not None else ''
 
         full_command = f"{xx_str}{command}{nn_str}\r".encode()
+        if debug:
+            print(full_command)
         self.ser.write(full_command)
 
         response = self.ser.read_until(b'\r').decode()
         return response
 
-    def send_command(self, command: str, xx_parameter=None, nn_parameter=None):
+    def send_command(self, command: str, xx_parameter=None, nn_parameter=None, debug=False):
         """
             Sends a command to the serial device with optional parameters and checks for errors.
 
@@ -59,6 +66,7 @@ class ESPController:
                 command (str): A string command that must be 2 or fewer characters long.
                 xx_parameter (int, optional): An integer to prepend to the command. Defaults to an empty string if not provided.
                 nn_parameter (int or float, optional): An integer or float to append to the command. Defaults to an empty string if not provided.
+                debug (bool, optional): A flag to activate the debug mode. If activated prints the command.
 
             Returns:
                 str: The response from the serial device as a string.
@@ -72,11 +80,31 @@ class ESPController:
             This method first sends the command to the serial device without performing any error checking. It then checks the device for any error codes by sending the "TB" command. If no errors are detected (error code 0), it returns the response from the device. If an error is detected, it raises a SerialError with the error message.
             """
 
-        response = self.__send_command_no_error_check(command, xx_parameter, nn_parameter)
+        response = self.send_command_no_error_check(command, xx_parameter, nn_parameter, debug)
 
-        error_buffer = self.__send_command_no_error_check("TB")
+        error_buffer = self.send_command_no_error_check("TB")
+        print(error_buffer)
 
-        if int(error_buffer[0]) == 0:
+        if "NO ERROR DETECTED" in error_buffer or error_buffer == "":
             return response
         else:
             raise SerialError(f"{error_buffer}")
+
+    def move_axis_absolut(self, axis, position, speed):
+        assert 0 < axis <= 3, "axis must be between 1 and 3"
+        assert 0 <= position <= 25, "position must be between 0 and 25"
+        max_speed = self.send_command_no_error_check("VU", axis, "?")
+        assert speed < float(max_speed), f"speed can't be higher than {max_speed}"
+
+        self.send_command_no_error_check("EP", 1)
+        current_speed = self.send_command_no_error_check("VA", axis, "?")
+        self.send_command("VA", axis, speed)
+        self.send_command("PA", axis, position)
+        self.send_command("WS", axis)
+        self.send_command("VA", axis, current_speed)
+        self.send_command("QP")
+        self.send_command("EX", 1)
+        self.send_command("XX", 1)
+
+        # TODO: Find out how to do the error handling, per connection TB/TE only can be read once afrer that it returns only ''
+
