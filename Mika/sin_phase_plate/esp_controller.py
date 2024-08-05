@@ -114,6 +114,36 @@ class ESPController:
                 break
 
     def move_axis_absolut(self, axis, position, speed):
+        """
+        Move an axis to an absolute position at a specified speed.
+
+        Parameters:
+        axis (int): The axis to move, must be between 1 and 3 inclusive.
+        position (float): The target position for the axis. Must be between 0 and the maximum position for the axis.
+                         For axis 1 and 2, the maximum position is 25. For axis 3, the maximum position is 360.
+        speed (float): The speed at which to move the axis. Must not exceed the maximum speed returned by the "VU" command for the specified axis.
+
+        Raises:
+        AssertionError: If the axis is not in the range 1 to 3.
+        AssertionError: If the position is outside the valid range for the specified axis.
+        AssertionError: If the speed exceeds the maximum speed for the specified axis.
+
+        Description:
+        This method moves the specified axis to the given absolute position at the specified speed. It first clears the error buffer and validates the
+        input parameters. It then retrieves the maximum speed for the axis and verifies that the given speed does not exceed this limit.
+        The method proceeds to enter program mode, change the speed to the specified value, move the axis to the desired position, wait for the
+        motion to complete, and restore the original speed. Finally, it exits program mode and checks for any errors.
+
+        Commands Used:
+        - EP: Enter program mode.
+        - VA: Set velocity.
+        - PA: Move to absolute position.
+        - WS: Wait for motion stop.
+        - QP: Quit program mode.
+        - EX: Execute program.
+        - XX: Erase program.
+        """
+
         self.clear_error_buffer()
         assert 0 < axis <= 3, "axis must be between 1 and 3"
         if 0 <= axis <= 2:
