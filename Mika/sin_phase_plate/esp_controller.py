@@ -18,7 +18,7 @@ class ESPController:
             stopbits=serial.STOPBITS_ONE,
             bytesize=serial.EIGHTBITS,
             rtscts=True,
-            timeout=1
+            timeout=0.5
         )
 
     def close_connection(self):
@@ -55,7 +55,7 @@ class ESPController:
             print(full_command)
         self.ser.write(full_command)
 
-        response = self.ser.read_until(b'\r').decode()
+        response = self.ser.read_until(b'\r\r\n').decode()
         return response
 
     def send_command(self, command: str, xx_parameter=None, nn_parameter=None, debug=False):
@@ -82,29 +82,55 @@ class ESPController:
 
         response = self.send_command_no_error_check(command, xx_parameter, nn_parameter, debug)
 
-        error_buffer = self.send_command_no_error_check("TB")
-        print(error_buffer)
+        error_code = self.send_command_no_error_check("TE", None, 1)
 
-        if "NO ERROR DETECTED" in error_buffer or error_buffer == "":
+        if error_code == '':
+            raise SerialError("Connection lost!")
+        elif int(error_code) == 0:
             return response
         else:
+            error_buffer = self.send_command_no_error_check("TB")
             raise SerialError(f"{error_buffer}")
 
+    def error_check(self):
+
+        error_count = self.send_command_no_error_check("TE", None, 2)
+
+        if error_count == '':
+            raise SerialError("Connection lost!")
+        elif int(error_count) == 0:
+            return True
+        else:
+            errors = []
+            for i in range(int(error_count)):
+                error = self.send_command_no_error_check("TB")
+                errors.append(error)
+            raise SerialError(errors)
+
+    def clear_error_buffer(self):
+        while True:
+            error_message = self.send_command_no_error_check("TB")
+            if "NO ERROR DETECTED" in error_message.strip():
+                break
+
     def move_axis_absolut(self, axis, position, speed):
+        self.clear_error_buffer()
         assert 0 < axis <= 3, "axis must be between 1 and 3"
-        assert 0 <= position <= 25, "position must be between 0 and 25"
-        max_speed = self.send_command_no_error_check("VU", axis, "?")
-        assert speed < float(max_speed), f"speed can't be higher than {max_speed}"
+        if 0 <= axis <= 2:
+            max_position = 25
+        else:
+            max_position = 360
+        assert 0 <= position <= max_position, f"position must be between 0 and {max_position}"
+        max_speed = self.send_command("VU", axis, "?")
+        assert speed <= float(max_speed), f"speed can't be higher than {max_speed}"
 
         self.send_command_no_error_check("EP", 1)
         current_speed = self.send_command_no_error_check("VA", axis, "?")
-        self.send_command("VA", axis, speed)
-        self.send_command("PA", axis, position)
-        self.send_command("WS", axis)
-        self.send_command("VA", axis, current_speed)
-        self.send_command("QP")
-        self.send_command("EX", 1)
-        self.send_command("XX", 1)
-
-        # TODO: Find out how to do the error handling, per connection TB/TE only can be read once afrer that it returns only ''
-
+        self.send_command_no_error_check("VA", axis, speed)
+        self.send_command_no_error_check("PA", axis, position)
+        self.send_command_no_error_check("WS", axis)
+        self.send_command_no_error_check("VA", axis, current_speed)
+        self.send_command_no_error_check("QP", 1)
+        self.send_command_no_error_check("EX", 1)
+        self.send_command_no_error_check("XX", 1)
+        self.error_check()
