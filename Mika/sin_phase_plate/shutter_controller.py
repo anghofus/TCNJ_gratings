@@ -1,0 +1,95 @@
+import serial
+
+
+class ShutterController:
+    def __init__(self, port):
+        self.ser = serial.Serial(
+            port=port,
+            baudrate=9600,
+            parity=serial.PARITY_NONE,
+            stopbits=serial.STOPBITS_ONE,
+            bytesize=serial.EIGHTBITS,
+            timeout=0.5
+        )
+
+    def connection_check(self):
+        """
+            Checks the connection with the SC10 controller by sending an empty command.
+
+        Returns:
+            bool: True if the connection is established and responds with an error indicating
+                  that the command is not defined. False if no response is received.
+        """
+        response = self.send_command("")
+        if "Command error CMD_NOT_DEFINED" in response:
+            return True
+        if response == "":
+            return False
+
+    def close_connection(self):
+        """
+        Closes the serial connection to the SC10 controller and deletes the instance.
+        This function should be called when the communication with the device is no longer needed.
+        """
+        self.ser.close()
+        del self
+
+    def send_command(self, command: str):
+        """
+        Sends a command to the SC10 controller and reads the response.
+
+        Args:
+            command (str): The command string to be sent to the controller.
+
+        Returns:
+            str: The response received from the controller.
+        """
+        full_command = f"{command}\r"
+        self.ser.write(full_command.encode())
+
+        response = repr(self.ser.read_until(b'>').decode())
+        return response
+
+    def get_shutter_state(self):
+        """
+        Retrieves the current state of the shutter (open or closed) from the SC10 controller.
+
+        Returns:
+            bool: True if the shutter is open, False if it is closed.
+        """
+        response = self.send_command("ens?")
+
+        if "0" in response:
+            return False
+        if "1" in response:
+            return True
+
+    def open_shutter(self):
+        """
+        Opens the shutter if it is currently closed.
+
+        Returns:
+            bool: True if the shutter was successfully opened, False if the shutter was already open.
+        """
+        state = self.get_shutter_state()
+        if not state:
+            self.send_command("ens")
+            return True
+        else:
+            print("Shutter already open!")
+            return False
+
+    def close_shutter(self):
+        """
+        Closes the shutter if it is currently open.
+
+        Returns:
+            bool: True if the shutter was successfully closed, False if the shutter was already closed.
+        """
+        state = self.get_shutter_state()
+        if state:
+            self.send_command("ens")
+            return True
+        else:
+            print("Shutter already closed!")
+            return False
