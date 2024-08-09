@@ -72,21 +72,46 @@ class ESPController:
 
     def send_command_no_error_check(self, command: str, xx_parameter=None, nn_parameter=None, debug=False):
         """
-        Sends a command to the serial device with optional parameters and returns the response.
+        Sends a command to the ESP302 controller without performing error checks on the response.
 
-        Args:
-            command (str): A string command that must be 2 or fewer characters long.
-            xx_parameter (int, optional): An integer to prepend to the command. Defaults to an empty string if not provided.
-            nn_parameter (int or float, optional): An integer or float to append to the command. Defaults to an empty string if not provided.
-            debug (bool, optional): A flag to activate the debug mode. If activated prints the command.
+        This function constructs and sends a command to the ESP302 controller using the specified `command`,
+        optional `xx_parameter`, and `nn_parameter`. It then reads and returns the response from the controller.
+
+        Parameters:
+        -----------
+        command : str
+            A two-character command mnemonic that specifies the action to be performed. The length of the command
+            must be between 1 and 2 characters.
+        xx_parameter : int, optional
+            An optional integer parameter that precedes the command mnemonic, typically used to specify an axis
+            number or other identifier (default is None).
+        nn_parameter : int, float, or str, optional
+            An optional parameter that follows the command mnemonic, typically used to specify a value or string
+            (default is None).
+        debug : bool, optional
+            If set to `True`, the full command that is sent to the controller will be printed to the console for
+            debugging purposes (default is False).
 
         Returns:
-            str: The response from the serial device as a string.
+        --------
+        str
+            The response from the controller, decoded as a string.
 
         Raises:
-            AssertionError: If the length of the command is not between 1 and 2 characters.
-            AssertionError: If xx_parameter is not None or an integer.
-            AssertionError: If nn_parameter is not None, an integer, or a float.
+        -------
+        AssertionError
+            If the `command` is not 1 or 2 characters long, or if the `xx_parameter` or `nn_parameter` are of
+            incorrect types.
+
+        Example:
+        --------
+        response = send_command_no_error_check("MO", 1)
+            Sends the "MO" (Motor On) command for axis 1 and returns the controller's response.
+
+        Note:
+        -----
+        This function does not perform any error checking on the response from the controller. Use it when
+        you want to send a command and handle potential errors separately.
         """
         assert 0 < len(command) <= 2, "command must be 2 or fewer characters"
         assert xx_parameter is None or isinstance(xx_parameter, int), "xx_parameter must be an integer"
@@ -105,25 +130,48 @@ class ESPController:
 
     def send_command(self, command: str, xx_parameter=None, nn_parameter=None, debug=False):
         """
-            Sends a command to the serial device with optional parameters and checks for errors.
+        Sends a command to the ESP302 controller and checks for errors.
 
-            Args:
-                command (str): A string command that must be 2 or fewer characters long.
-                xx_parameter (int, optional): An integer to prepend to the command. Defaults to an empty string if not provided.
-                nn_parameter (int or float, optional): An integer or float to append to the command. Defaults to an empty string if not provided.
-                debug (bool, optional): A flag to activate the debug mode. If activated prints the command.
+        This function constructs and sends a command to the ESP302 controller, waits for a response, and then checks for
+        any errors reported by the controller. If no errors are detected, the function returns the response. If an error is
+        detected, it raises a `SerialError` with the corresponding error message.
 
-            Returns:
-                str: The response from the serial device as a string.
+        Parameters:
+        -----------
+        command : str
+            A two-character command mnemonic that specifies the action to be performed. The length of the command
+            must be between 1 and 2 characters.
+        xx_parameter : int, optional
+            An optional integer parameter that precedes the command mnemonic, typically used to specify an axis
+            number or other identifier (default is None).
+        nn_parameter : int, float, or str, optional
+            An optional parameter that follows the command mnemonic, typically used to specify a value or string
+            (default is None).
+        debug : bool, optional
+            If set to `True`, the full command that is sent to the controller will be printed to the console for
+            debugging purposes (default is False).
 
-            Raises:
-                AssertionError: If the length of the command is not between 1 and 2 characters.
-                AssertionError: If xx_parameter is not None or an integer.
-                AssertionError: If nn_parameter is not None, an integer, or a float.
-                SerialError: If the device returns an error code.
+        Returns:
+        --------
+        str
+            The response from the controller, decoded as a string, if no errors are detected.
 
-            This method first sends the command to the serial device without performing any error checking. It then checks the device for any error codes by sending the "TB" command. If no errors are detected (error code 0), it returns the response from the device. If an error is detected, it raises a SerialError with the error message.
-            """
+        Raises:
+        -------
+        SerialError
+            If the connection is lost (indicated by an empty error code) or if the controller reports any errors.
+
+        Example:
+        --------
+        response = send_command("MO", 1)
+            Sends the "MO" (Motor On) command for axis 1, checks for errors, and returns the controller's response.
+
+        Note:
+        -----
+        This function performs error checking after sending the command by querying the controller with the `TE`
+        (Tell Error) command. If an error is detected, the function retrieves the error message using the `TB`
+        (Tell Buffer) command and raises a `SerialError`.
+        """
 
         response = self.send_command_no_error_check(command, xx_parameter, nn_parameter, debug)
 
