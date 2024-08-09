@@ -2,6 +2,48 @@ import serial
 
 
 class ShutterController:
+    """
+    A Python interface for controlling the SC10 shutter controller via a serial connection.
+
+    The `ShutterController` class provides a high-level interface to interact with the SC10 controller,
+    allowing users to open or close the shutter, check its status, and ensure proper communication with the device.
+    The class handles the low-level details of serial communication, offering simple methods for common operations.
+
+    Attributes:
+    -----------
+    ser : serial.Serial
+        The serial connection to the SC10 controller.
+
+    Methods:
+    --------
+    connection_check() -> bool:
+        Checks the connection with the SC10 controller by sending an empty command.
+        Returns `True` if the connection is established and an expected error response is received.
+        Returns `False` if no response is received.
+
+    close_connection():
+        Closes the serial connection to the SC10 controller and deletes the instance.
+
+    send_command(command: str) -> str:
+        Sends a command to the SC10 controller and reads the response.
+
+    get_shutter_state() -> bool:
+        Retrieves the current state of the shutter (open or closed) from the SC10 controller.
+        Returns `True` if the shutter is open, `False` if it is closed.
+
+    open_shutter() -> bool:
+        Opens the shutter if it is currently closed.
+        Returns `True` if the shutter was successfully opened, `False` if it was already open.
+
+    close_shutter() -> bool:
+        Closes the shutter if it is currently open.
+        Returns `True` if the shutter was successfully closed, `False` if it was already closed.
+
+    Note:
+    -----
+    This class assumes that the SC10 controller is properly connected via a serial port and that the shutter is correctly installed.
+    Before using this class, ensure that the serial port is accessible, the controller is powered on, and the shutter is in a known state.
+    """
     def __init__(self, port):
         self.ser = serial.Serial(
             port=port,

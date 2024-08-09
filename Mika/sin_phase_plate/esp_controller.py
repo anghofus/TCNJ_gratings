@@ -10,6 +10,49 @@ class SerialError(Exception):
 
 
 class ESPController:
+    """
+    A Python interface for controlling the ESP302 motion controller via a serial connection.
+
+    The `ESPController` class facilitates communication with the ESP302 controller, allowing users to send commands to control motors and perform various operations such as homing, moving axes, and error checking. The class abstracts low-level serial communication details, providing methods for sending commands, handling errors, and performing common tasks like moving axes to specific positions.
+
+    Attributes:
+    -----------
+    ser : serial.Serial
+        The serial connection to the ESP302 controller.
+
+    Methods:
+    --------
+    start_up():
+        Initializes the ESP302 controller by enabling motors and performing a homing sequence on all axes.
+
+    close_connection():
+        Closes the serial connection to the ESP302 controller and deletes the instance.
+
+    send_command_no_error_check(command: str, xx_parameter=None, nn_parameter=None, debug=False):
+        Sends a command to the ESP302 controller without performing error checks on the response.
+
+    send_command(command: str, xx_parameter=None, nn_parameter=None, debug=False):
+        Sends a command to the ESP302 controller and checks for errors.
+
+    error_check():
+        Checks for errors on the ESP302 controller and raises an exception if any are found.
+
+    clear_error_buffer():
+        Continuously checks for errors until no error is detected.
+
+    move_axis_absolut(axis: int, position: float, speed: float):
+        Moves an axis to an absolute position at a specified speed.
+
+    move_axis_relative(axis: int, units: float, speed: float):
+        Moves an axis by a relative distance at a specified speed.
+
+    Note:
+    -----
+    This class assumes that the ESP302 controller is properly connected via a serial port and that the motors are configured correctly. Before using this class, ensure that the serial port is accessible and that the controller is powered on.
+
+    The ESP302 motion controller allows for precise control of up to three axes, typically used in scientific instruments where accurate positioning is required.
+
+    """
     def __init__(self, port: str):
         self.ser = serial.Serial(
             port=port,
