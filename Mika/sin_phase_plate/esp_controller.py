@@ -110,6 +110,7 @@ class ESPController:
        -----
        Ensure that all necessary commands have been sent and that the controller is in a safe state before closing the connection.
        """
+        self.ser.flush()
         self.ser.close()
         del self
 
