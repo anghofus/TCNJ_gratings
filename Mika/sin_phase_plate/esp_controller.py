@@ -22,11 +22,51 @@ class ESPController:
         )
 
     def start_up(self):
+        """
+           Initializes the ESP302 controller by enabling motors and performing a homing sequence.
+
+           This function iterates through the three available axes of the ESP302 controller. For each axis, it:
+
+           1. Sends the `MO` (Motor On) command to enable the motor.
+           2. Sends the `OR` (Origin Search) command to initiate a homing sequence.
+
+           The homing sequence aligns the axes to a known reference position, ensuring accurate positioning for subsequent operations.
+
+           Commands Used:
+           --------------
+           - `MO` : Turns the motor on for the specified axis.
+           - `OR` : Initiates a homing sequence for the specified axis.
+
+           Example:
+           --------
+           start_up()
+               Enables the motors and performs a homing sequence on all three axes.
+
+           Note:
+           -----
+           Ensure that the motors are correctly configured and unobstructed before calling this function to prevent damage or misalignment.
+           """
+
         for i in range(3):
             self.send_command("MO", i + 1)
             self.send_command("OR", i + 1)
 
     def close_connection(self):
+        """
+       Closes the serial connection to the ESP302 controller.
+
+       This function closes the active serial connection to the ESP302 controller and deletes the instance of the class
+       to free up resources.
+
+       Example:
+       --------
+       close_connection()
+           Closes the connection to the controller and cleans up the instance.
+
+       Note:
+       -----
+       Ensure that all necessary commands have been sent and that the controller is in a safe state before closing the connection.
+       """
         self.ser.close()
         del self
 
@@ -98,7 +138,44 @@ class ESPController:
             raise SerialError(f"{error_buffer}")
 
     def error_check(self):
+        """
+        Checks for errors on the ESP302 controller and raises an exception if any are found.
 
+        This function queries the ESP302 controller for the number of errors currently stored using the `TE` command.
+        It handles the following cases:
+
+        - If the connection is lost (indicated by an empty response), a `SerialError` is raised with the message
+          "Connection lost!".
+        - If no errors are detected (`error_count` is 0), the function returns `True`.
+        - If one or more errors are present, the function retrieves each error message using the `TB` command,
+          collects them, and raises a `SerialError` with the list of errors.
+
+        Commands Used:
+        --------------
+        - `TE` : Retrieves the number of errors currently stored in the controller's error buffer.
+        - `TB` : Retrieves the current error message from the controller.
+
+        Raises:
+        -------
+        SerialError
+            If the connection is lost or if one or more errors are detected.
+
+        Returns:
+        --------
+        bool
+            Returns `True` if no errors are detected.
+
+        Example:
+        --------
+        error_check()
+            Checks the controller for errors, returning `True` if none are found,
+            or raising an exception if errors are detected.
+
+        Note:
+        -----
+        This function ensures that any errors reported by the controller are promptly identified and handled.
+        The caller should manage the `SerialError` to properly address connection issues or other errors.
+        """
         error_count = self.send_command_no_error_check("TE", None, 2)
 
         if error_count == '':
@@ -113,6 +190,33 @@ class ESPController:
             raise SerialError(errors)
 
     def clear_error_buffer(self):
+        """
+        Continuously checks for errors until no error is detected.
+
+        This function repeatedly queries the ESP302 controller for error messages
+        using the `TB` command. It continues to check until the response indicates
+        that there are no errors ("NO ERROR DETECTED").
+
+        The function operates in an infinite loop, breaking out only when the
+        controller reports that no errors are present.
+
+        Commands Used:
+        --------------
+        - `TB` : Retrieves the current error message from the controller.
+
+        Example:
+        --------
+        check_for_errors()
+            Continuously checks the controller for errors until the response
+            is "NO ERROR DETECTED".
+
+        Note:
+        -----
+        Use this function carefully, as it will enter an infinite loop if
+        the controller continuously reports errors. Ensure that the controller
+        is correctly set up to avoid endless looping.
+
+        """
         while True:
             error_message = self.send_command_no_error_check("TB")
             if "NO ERROR DETECTED" in error_message.strip():
@@ -171,6 +275,54 @@ class ESPController:
         self.error_check()
 
     def move_axis_relative(self, axis, units, speed):
+
+        """
+           Move a specified axis by a relative distance at a given speed.
+
+           This function commands an axis of the ESP302 controller to move a specified
+           number of units at a designated speed. It checks for errors before and after
+           execution, ensures that the speed does not exceed the maximum allowed for the axis,
+           and temporarily changes the speed to achieve the motion.
+
+           Parameters:
+           -----------
+           axis : int
+               The axis number to move (must be 1, 2, or 3).
+           units : float
+               The distance to move the axis in user-defined units.
+           speed : float
+               The speed at which to move the axis, in units/second. This value must not
+               exceed the maximum speed of the axis.
+
+           Raises:
+           -------
+           AssertionError
+               If the axis is not between 1 and 3 or if the speed exceeds the axis's
+               maximum allowable speed.
+
+           Commands Used:
+           --------------
+           - `VU` : Retrieves the maximum allowable velocity for the axis.
+           - `EP` : Enters the program mode.
+           - `VA` : Sets the velocity for the axis.
+           - `PR` : Commands the axis to move to a relative position.
+           - `WS` : Waits for the axis to stop moving.
+           - `QP` : Exits program mode.
+           - `EX` : Executes the program.
+           - `XX` : Erases the program from memory.
+
+           Example:
+           --------
+           move_axis_relative(1, 10.0, 5.0)
+               Moves axis 1 by 10 units at a speed of 5 units/second.
+
+           Note:
+           -----
+           This function automatically handles error checking before and after execution
+           to ensure safe operation. The speed is temporarily adjusted for the motion
+           and restored afterward.
+
+           """
         self.clear_error_buffer()
         assert 0 < axis <= 3, "axis must be between 1 and 3"
         max_speed = self.send_command("VU", axis, "?")
