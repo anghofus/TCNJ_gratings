@@ -21,6 +21,11 @@ class ESPController:
             timeout=0.5
         )
 
+    def start_up(self):
+        for i in range(3):
+            self.send_command("MO", i + 1)
+            self.send_command("OR", i + 1)
+
     def close_connection(self):
         self.ser.close()
         del self
@@ -158,6 +163,23 @@ class ESPController:
         current_speed = self.send_command_no_error_check("VA", axis, "?")
         self.send_command_no_error_check("VA", axis, speed)
         self.send_command_no_error_check("PA", axis, position)
+        self.send_command_no_error_check("WS", axis)
+        self.send_command_no_error_check("VA", axis, current_speed)
+        self.send_command_no_error_check("QP", 1)
+        self.send_command_no_error_check("EX", 1)
+        self.send_command_no_error_check("XX", 1)
+        self.error_check()
+
+    def move_axis_relative(self, axis, units, speed):
+        self.clear_error_buffer()
+        assert 0 < axis <= 3, "axis must be between 1 and 3"
+        max_speed = self.send_command("VU", axis, "?")
+        assert speed <= float(max_speed), f"speed can't be higher than {max_speed}"
+
+        self.send_command_no_error_check("EP", 1)
+        current_speed = self.send_command_no_error_check("VA", axis, "?")
+        self.send_command_no_error_check("VA", axis, speed)
+        self.send_command_no_error_check("PR", axis, units)
         self.send_command_no_error_check("WS", axis)
         self.send_command_no_error_check("VA", axis, current_speed)
         self.send_command_no_error_check("QP", 1)
