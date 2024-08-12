@@ -1,6 +1,14 @@
 import serial
 
 
+class SerialError(Exception):
+    def __init__(self, message):
+        super().__init__(message)
+
+    def __str__(self):
+        return f"{self.args[0]}"
+
+
 class LaserController:
     def __init__(self, port):
         self.ser = serial.Serial(
@@ -11,7 +19,7 @@ class LaserController:
             bytesize=serial.EIGHTBITS,
             timeout=0.5
         )
-        self.send_command(">=0")
+       # self.send_command(">=0")
 
     def connection_check(self):
         response = self.send_command("")
@@ -30,6 +38,9 @@ class LaserController:
         self.ser.write(full_command.encode())
 
         response = self.ser.read_until(b'\r\n').decode()
-        return response
-
-# TODO: write a error check function that decodes the 2 byte error code the laser returns to the ?FF command, write the rest of the laser control
+        if "\x00" in response:
+            raise SerialError("Command unknown")
+        elif response == "":
+            raise SerialError("Connection lost")
+        else:
+            return response
