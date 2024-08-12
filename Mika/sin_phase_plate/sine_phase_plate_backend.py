@@ -2,6 +2,9 @@ import numpy as np
 import math
 import scipy
 from PIL import Image
+from shutter_controller import *
+from esp_controller import *
+from laser_controller import *
 
 
 def calculate_angular_speed(time, grating_height, radius):
@@ -82,5 +85,19 @@ class SinePhasePlateGeneration:
     def __chirp_function(self, r):
         f = self.__y_min + ((1 + scipy.signal.sawtooth(math.radians((2 * np.pi) / (self.__focal_length * self.__wavelength) * r ** 2))) / 2) * self.__y_peak_to_peak
         return f
+
+
+class InstrumentController:
+    def __init__(self, port_laser, port_esp, port_shutter):
+        self.laser = LaserController(port_laser)
+        self.esp = ESPController(port_esp)
+        self.shutter = ShutterController(port_shutter)
+
+        if not self.laser.connection_check():
+            raise Exception('Laser not connected')
+        if not self.esp.connection_check():
+            raise Exception('ESP not connected')
+        if not self.shutter.connection_check():
+            raise Exception('Shutter not connected')
 
 
