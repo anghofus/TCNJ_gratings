@@ -64,6 +64,13 @@ class ESPController:
             timeout=0.5
         )
 
+    def connection_check(self):
+        response = self.send_command_no_error_check("TE", None, 2)
+        if response == '':
+            return False
+        else:
+            return True
+
     def start_up(self):
         """
            Initializes the ESP302 controller by enabling motors and performing a homing sequence.
