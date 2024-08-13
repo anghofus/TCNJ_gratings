@@ -321,7 +321,7 @@ class ESPController:
             if "NO ERROR DETECTED" in error_message.strip():
                 break
 
-    def move_axis_absolut(self, axis, position, speed):
+    def move_axis_absolut(self, axis, position, speed=1):
         """
         Move an axis to an absolute position at a specified speed.
 
@@ -437,3 +437,52 @@ class ESPController:
         self.send_command_no_error_check("EX", 1)
         self.send_command_no_error_check("XX", 1)
         self.error_check()
+
+    def move_to_coordinates(self, x_coordinate: float, y_coordinate: float, phi_coordinate=None, speed=1):
+        """
+        Moves the system to specified X, Y, and optional Phi coordinates at a given speed.
+
+        This method commands the ESP302 controller to move the X and Y axes to specified absolute positions
+        and optionally moves the Phi axis if provided. The method ensures precise positioning by sequentially
+        moving each axis to its target position, with checks to ensure that the coordinates are within their
+        valid ranges.
+
+        Parameters:
+        -----------
+        x_coordinate : float
+            The target position for the X-axis. Must be within the allowable range of 0 to 25 units.
+        y_coordinate : float
+            The target position for the Y-axis. Must be within the allowable range of 0 to 25 units.
+        phi_coordinate : float, optional
+            The target position for the Phi axis. Must be within the allowable range of 0 to 360 units,
+            or None if the Phi axis should not be moved (default is None).
+        speed : float, optional
+            The speed at which to move the axes, in units/second. Must not exceed the maximum allowable speed
+            for any axis. The same speed is applied to all axes (default is 1).
+
+        Raises:
+        -------
+        AssertionError
+            If any coordinate is out of its valid range, or if the speed exceeds the maximum allowable speed.
+
+        Example:
+        --------
+        move_to_coordinates(10.5, 20.0, 180.0, 2.0)
+            Moves the X-axis to 10.5 units, the Y-axis to 20.0 units, and the Phi axis to 180.0 units
+            at a speed of 2 units/second.
+
+        Note:
+        -----
+        The method first validates the coordinate ranges and then calls `move_axis_absolut` for each axis,
+        performing necessary error checks before and after moving each axis.
+        """
+        assert 0 <= x_coordinate <= 25, "x_coordinate must be between 0 and 25"
+        assert 0 <= y_coordinate <= 25, "y_coordinate must be between 0 and 25"
+        assert 0 <= phi_coordinate <= 360 or None, "phi_coordinate must be between 0 and 360"
+
+        self.move_axis_absolut(1, x_coordinate, speed)
+        self.move_axis_absolut(2, y_coordinate, speed)
+        if phi_coordinate is not None:
+            self.move_axis_absolut(3, phi_coordinate, speed)
+
+
