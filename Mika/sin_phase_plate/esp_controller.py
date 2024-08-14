@@ -63,6 +63,7 @@ class ESPController:
             rtscts=True,
             timeout=0.5
         )
+        self.clear_error_buffer()
 
     def connection_check(self):
         response = self.send_command_no_error_check("TE", None, 2)
@@ -359,11 +360,10 @@ class ESPController:
         else:
             max_position = 360
         assert 0 <= position <= max_position, f"position must be between 0 and {max_position}"
-        max_speed = self.send_command("VU", axis, "?")
-        assert speed <= float(max_speed), f"speed can't be higher than {max_speed}"
+        assert speed <= 1, f"speed can't be higher than 1"
 
+        current_speed = self.send_command_no_error_check("VA", axis, "?").strip()
         self.send_command_no_error_check("EP", 1)
-        current_speed = self.send_command_no_error_check("VA", axis, "?")
         self.send_command_no_error_check("VA", axis, speed)
         self.send_command_no_error_check("PA", axis, position)
         self.send_command_no_error_check("WS", axis)
@@ -424,11 +424,10 @@ class ESPController:
            """
         self.clear_error_buffer()
         assert 0 < axis <= 3, "axis must be between 1 and 3"
-        max_speed = self.send_command("VU", axis, "?")
-        assert speed <= float(max_speed), f"speed can't be higher than {max_speed}"
+        assert speed <= 1, f"speed can't be higher than 1"
 
-        self.send_command_no_error_check("EP", 1)
         current_speed = self.send_command_no_error_check("VA", axis, "?")
+        self.send_command_no_error_check("EP", 1)
         self.send_command_no_error_check("VA", axis, speed)
         self.send_command_no_error_check("PR", axis, units)
         self.send_command_no_error_check("WS", axis)
@@ -478,11 +477,10 @@ class ESPController:
         """
         assert 0 <= x_coordinate <= 25, "x_coordinate must be between 0 and 25"
         assert 0 <= y_coordinate <= 25, "y_coordinate must be between 0 and 25"
-        assert 0 <= phi_coordinate <= 360 or None, "phi_coordinate must be between 0 and 360"
+        if phi_coordinate is not None:
+            assert 0 <= phi_coordinate <= 360, "phi_coordinate must be between 0 and 360"
 
         self.move_axis_absolut(1, x_coordinate, speed)
         self.move_axis_absolut(2, y_coordinate, speed)
         if phi_coordinate is not None:
             self.move_axis_absolut(3, phi_coordinate, speed)
-
-
