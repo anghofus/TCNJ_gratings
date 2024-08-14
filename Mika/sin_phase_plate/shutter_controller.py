@@ -53,6 +53,13 @@ class ShutterController:
             bytesize=serial.EIGHTBITS,
             timeout=0.5
         )
+        print("Initializing shutter controller\n"
+              f"port: {port}"
+              "baudrate: 9600"
+              "parity: none"
+              "stop bits 1"
+              "bytesize: 8"
+              "timeout: 0.5")
 
     def connection_check(self):
         """
@@ -64,8 +71,10 @@ class ShutterController:
         """
         response = self.send_command("")
         if "Command error CMD_NOT_DEFINED" in response:
+            print("Shutter: Connection check successful")
             return True
         if response == "":
+            print("Shutter: Connection check failed")
             return False
 
     def close_connection(self):
@@ -76,6 +85,7 @@ class ShutterController:
         self.ser.flush()
         self.ser.close()
         del self
+        print("Shutter: Connection closed")
 
     def send_command(self, command: str):
         """
@@ -91,6 +101,9 @@ class ShutterController:
         self.ser.write(full_command.encode())
 
         response = repr(self.ser.read_until(b'>').decode())
+
+        print(f"Shutter: Command sent: {repr(full_command)}, response: {repr(response)}")
+
         return response
 
     def get_shutter_state(self):
@@ -117,9 +130,10 @@ class ShutterController:
         state = self.get_shutter_state()
         if not state:
             self.send_command("ens")
+            print("Shutter: Opened")
             return True
         else:
-            print("Shutter already open!")
+            print("Shutter: already open")
             return False
 
     def close_shutter(self):
@@ -132,7 +146,8 @@ class ShutterController:
         state = self.get_shutter_state()
         if state:
             self.send_command("ens")
+            print("Shutter: closed")
             return True
         else:
-            print("Shutter already closed!")
+            print("Shutter: already closed")
             return False
