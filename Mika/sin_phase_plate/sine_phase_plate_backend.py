@@ -100,4 +100,38 @@ class InstrumentController:
         if not self.shutter.connection_check():
             raise Exception('Shutter not connected')
 
+        self.esp.start_up()
+        self.shutter.close_shutter()
+        self.laser.send_command("L=1")
+
+    def close_connection(self):
+        self.laser.close_connection()
+        self.esp.close_connection()
+        self.shutter.close_connection()
+
+    def go_to_focus_location(self, focus_location):
+        if focus_location == "top":
+            coordinates = (4.91, 22)
+        elif focus_location == "bottom":
+            coordinates = (4.91, 8)
+        elif focus_location == "left":
+            coordinates = (12, 16.51)
+        elif focus_location == "right":
+            coordinates = (0, 16.51)
+        elif focus_location == "center":
+            coordinates = (4.91, 16.51)
+        else:
+            raise Exception('invalid focus location')
+
+        self.laser.send_command("P=30")
+        self.shutter.close_shutter()
+
+        self.esp.move_to_coordinates(coordinates[0], coordinates[1])
+
+
+
+
+
+
+
 

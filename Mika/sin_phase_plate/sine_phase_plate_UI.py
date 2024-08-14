@@ -18,8 +18,9 @@ class Settings:
         self.__wavelength = 633
         self.__y_min = 0
         self.__y_peak_to_peak = 128
-        self.__com_laser = "COM1"
-        self.__com_motion_controller = "COM2"
+        self.__com_laser = "/dev/ttyUSB0"
+        self.__com_motion_controller = "/dev/ttyUSB1"
+        self.__com_shutter = "/dev/ttyUSB2"
 
     @property
     def radius(self):
@@ -108,6 +109,14 @@ class Settings:
     def com_motion_controller(self, value: str):
         self.__com_motion_controller = value
 
+    @property
+    def com_shutter(self):
+        return self.__com_shutter
+
+    @com_shutter.setter
+    def com_shutter(self, value: str):
+        self.__com_shutter = value
+
     def read_from_json(self):
         try:
             with open('settings.json', 'r') as settings_file:
@@ -120,6 +129,8 @@ class Settings:
                 self.__y_peak_to_peak = settings['y_peak_to_peak']
                 self.__com_laser = settings['com_laser']
                 self.__com_motion_controller = settings['com_motion_controller']
+                self.__com_shutter = settings['com_shutter']
+
         except FileNotFoundError:
             self.write_to_json()
 
@@ -133,7 +144,8 @@ class Settings:
                 'y_min': self.__y_min,
                 'y_peak_to_peak': self.__y_peak_to_peak,
                 'com_laser': self.__com_laser,
-                'com_motion_controller': self.__com_motion_controller
+                'com_motion_controller': self.__com_motion_controller,
+                'com_shutter': self.__com_shutter
             }
             json.dump(settings, settings_file, indent=4)
 
@@ -177,6 +189,7 @@ class App(tk.Tk):
         super().__init__()
 
         self.settings = Settings()
+        self.instruments = InstrumentController(self.settings.com_laser, self.settings.com_motion_controller, self.settings.com_shutter)
 
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
@@ -185,15 +198,16 @@ class App(tk.Tk):
         self.geometry("640x480")
         self.minsize(640, 480)
 
-        self.start_screen = StartScreen(self, self.settings)
+        self.start_screen = StartScreen(self, self.settings, self.instruments)
 
         self.mainloop()
 
 
 class StartScreen(ttk.Frame):
-    def __init__(self, master, settings):
+    def __init__(self, master, settings, instruments):
         self.master = master
         self.settings = settings
+        self.instruments = instruments
         super().__init__(master)
 
         self.grid_columnconfigure(0, weight=1)
@@ -227,19 +241,20 @@ class StartScreen(ttk.Frame):
             self.settings.focal_length = float(self.entry_focal_length.get())
 
             self.grid_forget()
-            FocusingScreen(self.master, self.settings)
+            FocusingScreen(self.master, self.settings, self.instruments)
         except Exception as e:
             pass
 
     def button_settings(self):
         self.grid_forget()
-        SettingsScreen(self.master, self.settings)
+        SettingsScreen(self.master, self.settings, self.instruments)
 
 
 class SettingsScreen(ttk.Frame):
-    def __init__(self, master, settings):
+    def __init__(self, master, settings, instruments):
         self.master = master
         self.settings = settings
+        self.instruments = instruments
         super().__init__(master)
 
         self.settings.read_from_json()
@@ -254,6 +269,7 @@ class SettingsScreen(ttk.Frame):
         self.grid_rowconfigure(7, weight=1)
         self.grid_rowconfigure(8, weight=1)
         self.grid_rowconfigure(9, weight=1)
+        self.grid_rowconfigure(10, weight=1)
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
 
@@ -266,6 +282,7 @@ class SettingsScreen(ttk.Frame):
         ttk.Label(self, text="y_peak_to_peak", font=("Arial", 20)).grid(row=6, column=0, padx=10, sticky=tk.W)
         ttk.Label(self, text="laser COM", font=("Arial", 20)).grid(row=7, column=0, padx=10, sticky=tk.W)
         ttk.Label(self, text="motion controller COM", font=("Arial", 20)).grid(row=8, column=0, padx=10, sticky=tk.W)
+        ttk.Label(self, text="shutter COM", font=("Arial", 20)).grid(row=9, column=0, padx=10, sticky=tk.W)
 
         self.entry_exposure_time = ttk.Entry(self)
         self.entry_exposure_time.insert(0, self.settings.exposure_time)
@@ -291,9 +308,12 @@ class SettingsScreen(ttk.Frame):
         self.entry_motion_controller_COM = ttk.Entry(self)
         self.entry_motion_controller_COM.insert(0, self.settings.com_motion_controller)
         self.entry_motion_controller_COM.grid(row=8, column=1, padx=10)
+        self.entry_shutter_COM = ttk.Entry(self)
+        self.entry_shutter_COM.insert(0, self.settings.com_shutter)
+        self.entry_shutter_COM.grid(row=9, column=1, padx=10)
 
-        ttk.Button(self, text="apply", command=self.button_apply).grid(row=9, column=0)
-        ttk.Button(self, text="cancel", command=self.button_cancel).grid(row=9, column=1)
+        ttk.Button(self, text="apply", command=self.button_apply).grid(row=10, column=0)
+        ttk.Button(self, text="cancel", command=self.button_cancel).grid(row=10, column=1)
 
         self.grid(row=0, column=0, sticky="nsew")
 
@@ -306,21 +326,23 @@ class SettingsScreen(ttk.Frame):
         self.settings.y_peak_to_peak = int(self.entry_y_peak_to_peak.get())
         self.settings.com_laser = self.entry_laser_COM.get()
         self.settings.com_motion_controller = self.entry_motion_controller_COM.get()
+        self.settings.com_shutter = self.entry_shutter_COM.get()
 
         self.settings.write_to_json()
 
         self.grid_forget()
-        StartScreen(self.master, self.settings)
+        StartScreen(self.master, self.settings, self.instruments)
 
     def button_cancel(self):
         self.grid_forget()
-        StartScreen(self.master, self.settings)
+        StartScreen(self.master, self.settings, self.instruments)
 
 
 class FocusingScreen(ttk.Frame):
-    def __init__(self, master, settings):
+    def __init__(self, master, settings, instruments):
         self.master = master
         self.settings = settings
+        self.instruments = instruments
         super().__init__(master)
 
         self.grid_rowconfigure(0, weight=1)
@@ -334,25 +356,27 @@ class FocusingScreen(ttk.Frame):
 
         ttk.Label(self, text="focusing", font=("Arial", 25)).grid(row=0, column=0, columnspan=3, pady=10)
 
-        ttk.Button(self, text="up").grid(row=1, column=1, sticky=tk.S)
-        ttk.Button(self, text="center").grid(row=2, column=1)
-        ttk.Button(self, text="down").grid(row=3, column=1, sticky=tk.N)
-        ttk.Button(self, text="left").grid(row=2, column=0, sticky=tk.E)
-        ttk.Button(self, text="right").grid(row=2, column=2, sticky=tk.W)
+        ttk.Button(self, text="top", command=lambda: self.instruments.go_to_focus_location("top")).grid(row=1, column=1, sticky=tk.S)
+        ttk.Button(self, text="center", command=lambda: self.instruments.go_to_focus_location("center")).grid(row=2, column=1)
+        ttk.Button(self, text="bottom", command=lambda: self.instruments.go_to_focus_location("bottom")).grid(row=3, column=1, sticky=tk.N)
+        ttk.Button(self, text="left", command=lambda: self.instruments.go_to_focus_location("left")).grid(row=2, column=0, sticky=tk.E)
+        ttk.Button(self, text="right", command=lambda: self.instruments.go_to_focus_location("right")).grid(row=2, column=2, sticky=tk.W)
 
         ttk.Button(self, text="finish", command=self.button_finish).grid(row=4, column=0, columnspan=3)
 
         self.grid(row=0, column=0, sticky="nsew")
 
     def button_finish(self):
+        self.instruments.shutter.close_shutter()
         self.grid_forget()
-        ProcessScreen(self.master, self.settings)
+        ProcessScreen(self.master, self.settings, self.instruments)
 
 
 class ProcessScreen(ttk.Frame):
-    def __init__(self, master, settings):
+    def __init__(self, master, settings, instruments):
         self.master = master
         self.settings = settings
+        self.instruments = instruments
         super().__init__(master)
 
         self.generator = SinePhasePlateGeneration(self.settings.radius,
