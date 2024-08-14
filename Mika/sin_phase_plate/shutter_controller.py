@@ -53,13 +53,13 @@ class ShutterController:
             bytesize=serial.EIGHTBITS,
             timeout=0.5
         )
-        print("Initializing shutter controller\n"
-              f"port: {port}"
-              "baudrate: 9600"
-              "parity: none"
-              "stop bits 1"
-              "bytesize: 8"
-              "timeout: 0.5")
+        print(f"Shutter:Initializing\n"
+              f"\tport={self.ser.port}\n"
+              f"\tbaudrate={self.ser.baudrate}\n"
+              f"\tparity={self.ser.parity}\n"
+              f"\tstopbits={self.ser.stopbits}\n"
+              f"\tbytesize={self.ser.bytesize}\n"
+              f"\ttimeout={self.ser.timeout}")
 
     def connection_check(self):
         """
