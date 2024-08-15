@@ -80,10 +80,10 @@ class LaserController:
         """
         response = self.send_command("")
         if response == '\r\n':
-            print("Laser: Connection check failed")
+            print("Laser: Connection check successful")
             return True
         if response == "":
-            print("Laser: Connection check successful")
+            print("Laser: Connection check failed")
             return False
 
     def close_connection(self):
@@ -157,5 +157,5 @@ class LaserController:
             print("Laser: Connection lost")
             raise SerialError("Connection lost")
         else:
-            print(f"Laser: Command sent: {repr({full_command})}, response: {response}")
+            print(f"Laser: Command sent: {repr({full_command})}, response: {repr(response)}")
             return response
