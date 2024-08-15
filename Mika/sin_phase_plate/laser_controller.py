@@ -48,6 +48,14 @@ class LaserController:
 
         self.send_command(">=0")
 
+        print(f"Laser: Initializing\n"
+              f"\tport={self.ser.port}\n"
+              f"\tbaudrate={self.ser.baudrate}\n"
+              f"\tparity={self.ser.parity}\n"
+              f"\tstopbits={self.ser.stopbits}\n"
+              f"\tbytesize={self.ser.bytesize}\n"
+              f"\ttimeout={self.ser.timeout}")
+
     def connection_check(self):
         """
         Verifies if the connection to the laser is active.
@@ -72,8 +80,10 @@ class LaserController:
         """
         response = self.send_command("")
         if response == '\r\n':
+            print("Laser: Connection check failed")
             return True
         if response == "":
+            print("Laser: Connection check successful")
             return False
 
     def close_connection(self):
@@ -100,6 +110,7 @@ class LaserController:
         self.ser.flush()
         self.ser.close()
         del self
+        print("Laser: Connection closed")
 
     def send_command(self, command):
         """
@@ -140,8 +151,11 @@ class LaserController:
 
         response = self.ser.read_until(b'\r\n').decode()
         if "\x00" in response:
+            print(f"Laser: Command {repr({full_command})} is unknown")
             raise SerialError("Command unknown")
         elif response == "":
+            print("Laser: Connection lost")
             raise SerialError("Connection lost")
         else:
+            print(f"Laser: Command sent: {repr({full_command})}, response: {response}")
             return response

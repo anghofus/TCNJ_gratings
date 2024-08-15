@@ -53,7 +53,7 @@ class ShutterController:
             bytesize=serial.EIGHTBITS,
             timeout=0.5
         )
-        print(f"Shutter:Initializing\n"
+        print(f"Shutter: Initializing\n"
               f"\tport={self.ser.port}\n"
               f"\tbaudrate={self.ser.baudrate}\n"
               f"\tparity={self.ser.parity}\n"
@@ -116,8 +116,10 @@ class ShutterController:
         response = self.send_command("ens?")
 
         if "0" in response:
+            print("Shutter: is closed")
             return False
         if "1" in response:
+            print("Shutter: is open")
             return True
 
     def open_shutter(self):

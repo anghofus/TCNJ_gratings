@@ -63,13 +63,23 @@ class ESPController:
             rtscts=True,
             timeout=0.5
         )
-        self.clear_error_buffer()
+
+        print(f"ESP: Initializing\n"
+              f"\tport={self.ser.port}\n"
+              f"\tbaudrate={self.ser.baudrate}\n"
+              f"\tparity={self.ser.parity}\n"
+              f"\tstopbits={self.ser.stopbits}\n"
+              f"\tbytesize={self.ser.bytesize}\n"
+              f"\t rtscts={self.ser.rtscts}\n"
+              f"\ttimeout={self.ser.timeout}")
 
     def connection_check(self):
         response = self.send_command_no_error_check("TE", None, 2)
         if response == '':
+            print("ESP: Connection check failed")
             return False
         else:
+            print("ESP: Connection check successful")
             return True
 
     def start_up(self):
@@ -100,7 +110,9 @@ class ESPController:
 
         for i in range(3):
             self.send_command("MO", i + 1)
+            print(f"ESP: Axis {i} power on")
             self.send_command("OR", i + 1)
+            print(f"ESP: Axis {i} homing")
 
     def close_connection(self):
         """
@@ -121,6 +133,7 @@ class ESPController:
         self.ser.flush()
         self.ser.close()
         del self
+        print("ESP: Connection closed")
 
     def send_command_no_error_check(self, command: str, xx_parameter=None, nn_parameter=None, debug=False):
         """
@@ -178,6 +191,7 @@ class ESPController:
         self.ser.write(full_command)
 
         response = self.ser.read_until(b'\r\r\n').decode()
+        print(f"ESP: Command sent: {repr(full_command)}, response: {repr(response)}")
         return response
 
     def send_command(self, command: str, xx_parameter=None, nn_parameter=None, debug=False):
@@ -230,11 +244,14 @@ class ESPController:
         error_code = self.send_command_no_error_check("TE", None, 1)
 
         if error_code == '':
+            print("ESP: Error check failed: Connection lost")
             raise SerialError("Connection lost!")
         elif int(error_code) == 0:
+            print("ESP: Error check: OK")
             return response
         else:
             error_buffer = self.send_command_no_error_check("TB")
+            print(f"ESP: Error check failed: {error_buffer}")
             raise SerialError(f"{error_buffer}")
 
     def error_check(self):
@@ -279,14 +296,17 @@ class ESPController:
         error_count = self.send_command_no_error_check("TE", None, 2)
 
         if error_count == '':
+            print("ESP: Error check failed: Connection lost")
             raise SerialError("Connection lost!")
         elif int(error_count) == 0:
+            print("ESP: Error check: OK")
             return True
         else:
             errors = []
             for i in range(int(error_count)):
                 error = self.send_command_no_error_check("TB")
                 errors.append(error)
+            print(f"ESP: Error check failed: {errors}")
             raise SerialError(errors)
 
     def clear_error_buffer(self):
@@ -320,6 +340,7 @@ class ESPController:
         while True:
             error_message = self.send_command_no_error_check("TB")
             if "NO ERROR DETECTED" in error_message.strip():
+                print("ESP: Error buffer cleared")
                 break
 
     def move_axis_absolut(self, axis, position, speed=1):
@@ -362,6 +383,8 @@ class ESPController:
         assert 0 <= position <= max_position, f"position must be between 0 and {max_position}"
         assert speed <= 1, f"speed can't be higher than 1"
 
+        print(f"ESP: Move (abs) Axis {axis} to {position} at speed {speed}")
+
         current_speed = self.send_command_no_error_check("VA", axis, "?").strip()
         self.send_command_no_error_check("EP", 1)
         self.send_command_no_error_check("VA", axis, speed)
@@ -371,7 +394,8 @@ class ESPController:
         self.send_command_no_error_check("QP", 1)
         self.send_command_no_error_check("EX", 1)
         self.send_command_no_error_check("XX", 1)
-        self.error_check()
+        if self.error_check():
+            print("ESP: Movement successful")
 
     def move_axis_relative(self, axis, units, speed):
 
@@ -426,6 +450,8 @@ class ESPController:
         assert 0 < axis <= 3, "axis must be between 1 and 3"
         assert speed <= 1, f"speed can't be higher than 1"
 
+        print(f"ESP: Move (rel) Axis {axis} {units:+} units at speed {speed}")
+
         current_speed = self.send_command_no_error_check("VA", axis, "?")
         self.send_command_no_error_check("EP", 1)
         self.send_command_no_error_check("VA", axis, speed)
@@ -435,7 +461,8 @@ class ESPController:
         self.send_command_no_error_check("QP", 1)
         self.send_command_no_error_check("EX", 1)
         self.send_command_no_error_check("XX", 1)
-        self.error_check()
+        if self.error_check():
+            print("ESP: Movement successful")
 
     def move_to_coordinates(self, x_coordinate: float, y_coordinate: float, phi_coordinate=None, speed=1):
         """
@@ -479,6 +506,11 @@ class ESPController:
         assert 0 <= y_coordinate <= 25, "y_coordinate must be between 0 and 25"
         if phi_coordinate is not None:
             assert 0 <= phi_coordinate <= 360, "phi_coordinate must be between 0 and 360"
+
+        if phi_coordinate is None:
+            print(f"ESP: Move to X:{x_coordinate}, Y:{y_coordinate}")
+        if phi_coordinate is not None:
+            print(f"ESP: Move to X:{x_coordinate}, Y:{y_coordinate}, PHI: {phi_coordinate}")
 
         self.move_axis_absolut(1, x_coordinate, speed)
         self.move_axis_absolut(2, y_coordinate, speed)
