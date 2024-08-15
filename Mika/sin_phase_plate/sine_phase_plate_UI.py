@@ -198,9 +198,15 @@ class App(tk.Tk):
         self.geometry("640x480")
         self.minsize(640, 480)
 
+        self.protocol("WM_DELETE_WINDOW", self.close_application)
+
         self.start_screen = StartScreen(self, self.settings, self.instruments)
 
         self.mainloop()
+
+    def close_application(self):
+        self.instruments.close_connection()
+        self.destroy()
 
 
 class StartScreen(ttk.Frame):
