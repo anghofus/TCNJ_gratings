@@ -93,6 +93,14 @@ class SinePhasePlateGeneration:
         return f
 
 
+class SinePhasePlatePrinting:
+    def __init__(self, images: list, slm_width: float, exposure_time: float):
+        assert all(isinstance(image, Image.Image) for image in images), "All enterys of the list \'images\' must be a PIL image object"
+        self.__images = images
+
+
+
+
 class InstrumentController:
     def __init__(self, port_laser, port_esp, port_shutter):
         self.laser = LaserController(port_laser)
