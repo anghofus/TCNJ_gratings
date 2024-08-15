@@ -46,8 +46,6 @@ class LaserController:
             timeout=0.5
         )
 
-        self.send_command(">=0")
-
         print(f"Laser: Initializing\n"
               f"\tport={self.ser.port}\n"
               f"\tbaudrate={self.ser.baudrate}\n"
@@ -55,6 +53,8 @@ class LaserController:
               f"\tstopbits={self.ser.stopbits}\n"
               f"\tbytesize={self.ser.bytesize}\n"
               f"\ttimeout={self.ser.timeout}")
+
+        self.send_command(">=0")
 
     def connection_check(self):
         """
@@ -157,5 +157,5 @@ class LaserController:
             print("Laser: Connection lost")
             raise SerialError("Connection lost")
         else:
-            print(f"Laser: Command sent: {repr({full_command})}, response: {repr(response)}")
+            print(f"Laser: Command sent: {repr(full_command)}, response: {repr(response)}")
             return response

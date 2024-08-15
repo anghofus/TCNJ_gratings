@@ -8,7 +8,9 @@ from laser_controller import *
 
 
 def calculate_angular_speed(time, grating_height, radius):
-    return grating_height/(time * radius)
+    angular_speed = grating_height/(time * radius)
+    print(f"System: calculated angular speed: {angular_speed}")
+    return angular_speed
 
 
 class SinePhasePlateGeneration:
@@ -66,11 +68,14 @@ class SinePhasePlateGeneration:
         return images
 
     def __generate_waveform(self):
+        print("System: Generating waveform")
         for i in range(self.__linespace_width):
             r = i * self.__pixel_width
             self.__waveform.append(self.__chirp_function(r))
+        print("System: Waveform generated")
 
     def __generate_slm_images(self):
+        print("System: Generating SLM images")
         images = []
         image_array = np.zeros((self.__slm_px_height, self.__slm_px_width), dtype=np.uint8)
         for i in range(self.__slm_count):
@@ -80,6 +85,7 @@ class SinePhasePlateGeneration:
                 image_array[j] = self.__waveform[start:stop]
             image = Image.fromarray(image_array)
             images.append(image)
+            print(f"System: {i+1} of {self.__slm_count} SLM images generated")
         return images
 
     def __chirp_function(self, r):

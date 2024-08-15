@@ -116,10 +116,10 @@ class ShutterController:
         response = self.send_command("ens?")
 
         if "0" in response:
-            print("Shutter: is closed")
+            print("Shutter: State: closed")
             return False
         if "1" in response:
-            print("Shutter: is open")
+            print("Shutter: State: open")
             return True
 
     def open_shutter(self):
