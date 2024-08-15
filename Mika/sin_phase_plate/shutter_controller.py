@@ -129,6 +129,7 @@ class ShutterController:
         Returns:
             bool: True if the shutter was successfully opened, False if the shutter was already open.
         """
+        print("Shutter: Open shutter")
         state = self.get_shutter_state()
         if not state:
             self.send_command("ens")
@@ -145,6 +146,7 @@ class ShutterController:
         Returns:
             bool: True if the shutter was successfully closed, False if the shutter was already closed.
         """
+        print("Shutter: Close shutter")
         state = self.get_shutter_state()
         if state:
             self.send_command("ens")

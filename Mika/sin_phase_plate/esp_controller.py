@@ -110,9 +110,9 @@ class ESPController:
 
         for i in range(3):
             self.send_command("MO", i + 1)
-            print(f"ESP: Axis {i} power on")
+            print(f"ESP: Axis {i+1} power on")
             self.send_command("OR", i + 1)
-            print(f"ESP: Axis {i} homing")
+            print(f"ESP: Axis {i+1} homing")
 
     def close_connection(self):
         """
