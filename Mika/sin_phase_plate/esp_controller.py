@@ -70,7 +70,7 @@ class ESPController:
               f"\tparity={self.ser.parity}\n"
               f"\tstopbits={self.ser.stopbits}\n"
               f"\tbytesize={self.ser.bytesize}\n"
-              f"\t rtscts={self.ser.rtscts}\n"
+              f"\trtscts={self.ser.rtscts}\n"
               f"\ttimeout={self.ser.timeout}")
 
     def connection_check(self):
