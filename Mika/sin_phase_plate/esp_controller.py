@@ -1,4 +1,5 @@
 import serial
+import time
 
 
 class SerialError(Exception):
@@ -443,7 +444,7 @@ class ESPController:
         if self.error_check():
             print("ESP: Movement successful")
 
-    def move_axis_relative(self, axis, units, speed):
+    def move_axis_relative(self, axis, units, speed=1):
 
         """
            Move a specified axis by a relative distance at a given speed.
@@ -562,3 +563,11 @@ class ESPController:
         self.move_axis_absolut(2, y_coordinate, speed)
         if phi_coordinate is not None:
             self.move_axis_absolut(3, phi_coordinate, speed)
+
+    def wait_for_movement(self, axis):
+
+        self.clear_error_buffer()
+        self.ser.flush()
+        while self.get_motion_status()[axis-1]:
+            time.sleep(0.1)
+        return True
