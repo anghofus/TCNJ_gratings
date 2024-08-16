@@ -343,6 +343,52 @@ class ESPController:
                 print("ESP: Error buffer cleared")
                 break
 
+    def get_motion_status(self):
+        """
+        Retrieves the motion status of all three axes.
+
+        This method queries the ESP302 controller to determine whether each of the three axes (X, Y, and Phi) is currently in motion.
+        The status is returned as a list of binary values, where 1 indicates that the axis is in motion, and 0 indicates that it is stationary.
+
+        The method sends the "TS" (Tell Status) command to the controller, which returns the status in ASCII format. This status is then converted into a binary representation, with each bit corresponding to the motion state of one axis.
+
+        Returns:
+        --------
+        List[int]
+            A list of three integers (1 or 0) representing the motion state of the X, Y, and Phi axes, respectively.
+
+        Raises:
+        -------
+        SerialError
+            If the motion state cannot be read or if an invalid motion state is detected.
+
+        Example:
+        --------
+        status = get_motion_status()
+            Retrieves the motion status of all axes and prints whether each axis is in motion.
+
+        Note:
+        -----
+        This method provides a simple way to monitor the movement of the axes, which is essential for ensuring that commands are issued only when the axes are in the correct state.
+        """
+        ascii_response = self.send_command("TS")[:-3].encode()
+        binary = bin(int.from_bytes(ascii_response, "big"))[2:].zfill(8)
+
+        print("ESP: get motion state")
+
+        motion_state = []
+        for i in range(3):
+            if binary[-(i + 1)] == "1":
+                motion_state.append(1)
+                print(f"\tAxis {i + 1} in motion")
+            elif binary[-(i + 1)] == "0":
+                motion_state.append(0)
+                print(f"\tAxis {i + 1} not in motion")
+            else:
+                print(f"\fAxis {i + 1} invalid reading")
+                raise SerialError("Invalid reading for motion state")
+        return motion_state
+
     def move_axis_absolut(self, axis, position, speed=1):
         """
         Move an axis to an absolute position at a specified speed.
