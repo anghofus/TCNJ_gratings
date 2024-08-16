@@ -7,12 +7,6 @@ from esp_controller import *
 from laser_controller import *
 
 
-def calculate_angular_speed(time, grating_height, radius):
-    angular_speed = grating_height/(time * radius)
-    print(f"System: calculated angular speed: {angular_speed}")
-    return angular_speed
-
-
 class SinePhasePlateGeneration:
     def __init__(self,
                  radius: float,
@@ -91,15 +85,7 @@ class SinePhasePlateGeneration:
     def __chirp_function(self, r):
         f = self.__y_min + ((1 + scipy.signal.sawtooth(math.radians((2 * np.pi) / (self.__focal_length * self.__wavelength) * r ** 2))) / 2) * self.__y_peak_to_peak
         return f
-
-
-class SinePhasePlatePrinting:
-    def __init__(self, images: list, slm_width: float, exposure_time: float):
-        assert all(isinstance(image, Image.Image) for image in images), "All enterys of the list \'images\' must be a PIL image object"
-        self.__images = images
-
-
-
+        
 
 class InstrumentController:
     def __init__(self, port_laser, port_esp, port_shutter):
@@ -142,7 +128,23 @@ class InstrumentController:
 
         self.esp.move_to_coordinates(coordinates[0], coordinates[1])
 
+    def sine_phase_plate_printing(self, image_index: int, grating_width: float, grating_height: float, exposure_time: float, laser_power: float):
+        assert image_index > 0, "image index must be grater than zero"
+        assert grating_width > 0, "grating width must be grater than zero"
+        assert exposure_time > 0, "exposure time must be grater than zero"
+        assert 30 >= laser_power >= 300, "laser power must be between 30 and 300 mW"
+        
+        radius = grating_width * image_index
+        angular_speed = grating_height / (exposure_time * radius)
 
+        self.esp.move_axis_relative(1, grating_width)
+        self.esp.wait_for_movement(1)
+        self.laser.send_command("L=1")
+        self.laser.send_command(f"P={laser_power}")
+        self.esp.move_axis_relative(3, 360, angular_speed)
+        
+        
+        
 
 
 
