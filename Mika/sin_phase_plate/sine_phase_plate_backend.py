@@ -138,7 +138,7 @@ class InstrumentController:
         angular_speed = grating_height / (exposure_time * radius)
 
         self.esp.move_axis_relative(1, grating_width)
-        self.esp.wait_for_movement(1)
+        self.esp.wait_for_movement()
         self.laser.send_command("L=1")
         self.laser.send_command(f"P={laser_power}")
         self.esp.move_axis_relative(3, 360, angular_speed)

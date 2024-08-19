@@ -12,47 +12,55 @@ class SerialError(Exception):
 
 class ESPController:
     """
-    A Python interface for controlling the ESP302 motion controller via a serial connection.
+    A controller class for interfacing with the Newport ESP302 motion controller via a serial connection.
 
-    The `ESPController` class facilitates communication with the ESP302 controller, allowing users to send commands to control motors and perform various operations such as homing, moving axes, and error checking. The class abstracts low-level serial communication details, providing methods for sending commands, handling errors, and performing common tasks like moving axes to specific positions.
+    The ESPController class provides methods to initialize the connection, send commands, check for errors,
+    and control the motion of the connected stages. The controller operates through an RS-232 serial interface,
+    allowing for control of up to three axes. The class includes methods to move axes, perform homing sequences,
+    check motion status, and handle errors.
 
     Attributes:
     -----------
     ser : serial.Serial
-        The serial connection to the ESP302 controller.
+        The serial connection object used for communication with the ESP302 controller.
 
     Methods:
     --------
+    connection_check() -> bool:
+        Verifies if the controller is properly connected by sending a test command.
+
     start_up():
-        Initializes the ESP302 controller by enabling motors and performing a homing sequence on all axes.
+        Enables the motors and performs a homing sequence on all connected axes.
 
     close_connection():
-        Closes the serial connection to the ESP302 controller and deletes the instance.
+        Closes the serial connection to the controller and cleans up the instance.
 
-    send_command_no_error_check(command: str, xx_parameter=None, nn_parameter=None, debug=False):
-        Sends a command to the ESP302 controller without performing error checks on the response.
+    send_command_no_error_check(command: str, xx_parameter=None, nn_parameter=None, debug=False) -> str:
+        Sends a command to the controller without checking for errors and returns the response.
 
-    send_command(command: str, xx_parameter=None, nn_parameter=None, debug=False):
-        Sends a command to the ESP302 controller and checks for errors.
+    send_command(command: str, xx_parameter=None, nn_parameter=None, debug=False) -> str:
+        Sends a command to the controller and checks for errors before returning the response.
 
-    error_check():
-        Checks for errors on the ESP302 controller and raises an exception if any are found.
+    error_check() -> bool:
+        Checks for errors reported by the controller and raises an exception if any are found.
 
     clear_error_buffer():
-        Continuously checks for errors until no error is detected.
+        Continuously checks and clears the controller's error buffer until no errors are detected.
 
-    move_axis_absolut(axis: int, position: float, speed: float):
-        Moves an axis to an absolute position at a specified speed.
+    get_motion_status() -> list[int]:
+        Retrieves the motion status of all axes, indicating whether each axis is currently in motion.
 
-    move_axis_relative(axis: int, units: float, speed: float):
-        Moves an axis by a relative distance at a specified speed.
+    move_axis_absolut(axis: int, position: float, speed=1):
+        Moves the specified axis to an absolute position at a given speed.
 
-    Note:
-    -----
-    This class assumes that the ESP302 controller is properly connected via a serial port and that the motors are configured correctly. Before using this class, ensure that the serial port is accessible and that the controller is powered on.
+    move_axis_relative(axis: int, units: float, speed=1):
+        Moves the specified axis by a relative distance at a given speed.
 
-    The ESP302 motion controller allows for precise control of up to three axes, typically used in scientific instruments where accurate positioning is required.
+    move_to_coordinates(x_coordinate: float, y_coordinate: float, phi_coordinate=None, speed=1):
+        Moves the system to specified X, Y, and optional Phi coordinates at a given speed.
 
+    wait_for_movement() -> bool:
+        Waits until all axes have completed their movements and are stationary.
     """
     def __init__(self, port: str):
         self.ser = serial.Serial(
@@ -75,6 +83,26 @@ class ESPController:
               f"\ttimeout={self.ser.timeout}")
 
     def connection_check(self):
+        """
+        Checks if the ESP302 controller is properly connected and responsive.
+
+        This method sends a test command ('TE') to the controller and checks for a response. If the controller
+        responds, the connection is considered successful; otherwise, the connection is deemed to have failed.
+
+        Returns:
+        --------
+        bool
+            True if the connection is successful, False if the connection check fails.
+
+        Example:
+        --------
+        connection_status = connection_check()
+            Checks the connection status of the controller and prints the result.
+
+        Note:
+        -----
+        The connection check is crucial to ensure that the controller is online and capable of receiving further commands.
+        """
         response = self.send_command_no_error_check("TE", None, 2)
         if response == '':
             print("ESP: Connection check failed")
@@ -239,6 +267,7 @@ class ESPController:
         (Tell Error) command. If an error is detected, the function retrieves the error message using the `TB`
         (Tell Buffer) command and raises a `SerialError`.
         """
+        self.clear_error_buffer()
 
         response = self.send_command_no_error_check(command, xx_parameter, nn_parameter, debug)
 
@@ -564,10 +593,37 @@ class ESPController:
         if phi_coordinate is not None:
             self.move_axis_absolut(3, phi_coordinate, speed)
 
-    def wait_for_movement(self, axis):
+    def wait_for_movement(self):
+        """
+        Waits for all axes to stop moving and ensures that the motion is complete.
 
+        This method repeatedly checks the motion status of all axes by querying the controller. It pauses briefly
+        between checks to allow for any ongoing motion to complete. After detecting that all axes are stationary,
+        the method waits a short additional period to confirm the motion has fully ceased.
+
+        Returns:
+        --------
+        bool
+            True when all motion has stopped and the axes are stationary.
+
+        Example:
+        --------
+        wait_for_movement()
+            Waits for all axes to finish moving before proceeding with further commands.
+
+        Note:
+        -----
+        This method is useful for ensuring that subsequent commands are not issued while the axes are still in motion.
+        """
         self.clear_error_buffer()
-        self.ser.flush()
-        while self.get_motion_status()[axis-1]:
+        while any(self.get_motion_status()):
             time.sleep(0.1)
+
+        start_time = time.time()
+        while time.time() < start_time + 0.3:
+            if any(self.get_motion_status()):
+                self.wait_for_movement()
+            else:
+                pass
+
         return True
