@@ -113,35 +113,34 @@ class ESPController:
 
     def start_up(self):
         """
-           Initializes the ESP302 controller by enabling motors and performing a homing sequence.
+        Initializes the ESP302 controller by enabling motors and performing a homing sequence on all axes.
 
-           This function iterates through the three available axes of the ESP302 controller. For each axis, it:
+        This method performs the following steps:
 
-           1. Sends the `MO` (Motor On) command to enable the motor.
-           2. Sends the `OR` (Origin Search) command to initiate a homing sequence.
+        1. Iterates through all three axes of the ESP302 controller.
+        2. Sends the "MO" (Motor On) command to each axis, powering it on.
+        3. Sends the "OR" (Origin Search) command to each axis, initiating a homing sequence.
+        4. Waits for all axes to complete their movements using the `wait_for_movement` method.
 
-           The homing sequence aligns the axes to a known reference position, ensuring accurate positioning for subsequent operations.
+        The homing sequence ensures that each axis moves to its reference position, establishing a known starting point
+        for subsequent operations. This is critical for ensuring accurate positioning during later commands.
 
-           Commands Used:
-           --------------
-           - `MO` : Turns the motor on for the specified axis.
-           - `OR` : Initiates a homing sequence for the specified axis.
+        Example:
+        --------
+        start_up()
+            Powers on all axes and performs a homing sequence to align them to their reference positions.
 
-           Example:
-           --------
-           start_up()
-               Enables the motors and performs a homing sequence on all three axes.
-
-           Note:
-           -----
-           Ensure that the motors are correctly configured and unobstructed before calling this function to prevent damage or misalignment.
-           """
-
+        Note:
+        -----
+        Ensure that all connected stages are clear of obstructions and properly mounted before calling this method
+        to prevent potential damage during the homing process.
+        """
         for i in range(3):
             self.send_command("MO", i + 1)
             print(f"ESP: Axis {i+1} power on")
             self.send_command("OR", i + 1)
             print(f"ESP: Axis {i+1} homing")
+        self.wait_for_movement()
 
     def close_connection(self):
         """
@@ -457,7 +456,8 @@ class ESPController:
         else:
             max_position = 360
         assert 0 <= position <= max_position, f"position must be between 0 and {max_position}"
-        assert speed <= 1, f"speed can't be higher than 1"
+        max_speed = self.send_command("VU", axis, '?')
+        assert speed <= int(max_speed), f"speed can't be higher than {max_speed}"
 
         print(f"ESP: Move (abs) Axis {axis} to {position} at speed {speed}")
 
@@ -524,7 +524,8 @@ class ESPController:
            """
         self.clear_error_buffer()
         assert 0 < axis <= 3, "axis must be between 1 and 3"
-        assert speed <= 1, f"speed can't be higher than 1"
+        max_speed = self.send_command("VU", axis, '?')
+        assert speed <= int(max_speed), f"speed can't be higher than {max_speed}"
 
         print(f"ESP: Move (rel) Axis {axis} {units:+} units at speed {speed}")
 
