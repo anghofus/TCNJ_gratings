@@ -169,15 +169,29 @@ class ImageDisplay(tk.Toplevel):
         self.attributes("-fullscreen", True)
         self.configure(background='black')
 
+        # Initialize the label to None
+        self.label = None
+
     def show_image(self, image_object):
         assert isinstance(image_object, Image.Image), "Image must be a PIL Image object"
 
         photo = ImageTk.PhotoImage(image_object)
 
-        # Create a label to hold the image
-        label = tk.Label(self, image=photo)
-        label.image = photo  # Keep a reference to avoid garbage collection
-        label.pack()
+        if self.label is None:
+            # Create a label to hold the image
+            self.label = tk.Label(self, image=photo)
+            self.label.image = photo  # Keep a reference to avoid garbage collection
+            self.label.pack()
+        else:
+            self.__update_image(image_object)
+
+    def __update_image(self, image_object):
+        assert isinstance(image_object, Image.Image), "Image must be a PIL Image object"
+
+        photo = ImageTk.PhotoImage(image_object)
+
+        self.label.configure(image=photo)
+        self.label.image = photo  # Update the reference to avoid garbage collection
 
 
 class NoSecondMonitorError(Exception):
