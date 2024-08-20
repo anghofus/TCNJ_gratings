@@ -1,9 +1,13 @@
 import tkinter as tk
 from tkinter import ttk
 import json
+
+from scipy._lib.cobyqa import settings
+
 from sine_phase_plate_backend import *
 import screeninfo
 from PIL import Image, ImageTk
+from threading import Thread
 from time import sleep
 
 
@@ -16,6 +20,7 @@ class Settings:
         self.__grating_width = 70
         self.__grating_height = 40
         self.__wavelength = 633
+        self.__laser_power = 150
         self.__y_min = 0
         self.__y_peak_to_peak = 128
         self.__com_laser = "/dev/ttyUSB0"
@@ -76,6 +81,14 @@ class Settings:
         self.__wavelength = value
 
     @property
+    def laser_power(self):
+        return self.__laser_power
+
+    @laser_power.setter
+    def laser_power(self, value: float):
+        assert 30 <= value <= 300, "laser_power must be between 30 and 300 mW"
+        self.__laser_power = value
+    @property
     def y_min(self):
         return self.__y_min
 
@@ -125,6 +138,7 @@ class Settings:
                 self.__grating_width = settings['grating_width']
                 self.__grating_height = settings['grating_height']
                 self.__wavelength = settings['wavelength']
+                self.__laser_power = settings['laser_power']
                 self.__y_min = settings['y_min']
                 self.__y_peak_to_peak = settings['y_peak_to_peak']
                 self.__com_laser = settings['com_laser']
@@ -141,6 +155,7 @@ class Settings:
                 'grating_width': self.__grating_width,
                 'grating_height': self.__grating_height,
                 'wavelength': self.__wavelength,
+                'laser_power': self.__laser_power,
                 'y_min': self.__y_min,
                 'y_peak_to_peak': self.__y_peak_to_peak,
                 'com_laser': self.__com_laser,
@@ -185,6 +200,9 @@ class ImageDisplay(tk.Toplevel):
         else:
             self.__update_image(image_object)
 
+    def thread_safe_show_image(self, image_object):
+        self.after(0, self.show_image, image_object)
+
     def __update_image(self, image_object):
         assert isinstance(image_object, Image.Image), "Image must be a PIL Image object"
 
@@ -196,6 +214,23 @@ class ImageDisplay(tk.Toplevel):
 
 class NoSecondMonitorError(Exception):
     pass
+
+
+class PrintingThread(Thread):
+    def __init__(self, images, settings, instruments, image_display):
+        super().__init__()
+        self.images = images
+        self.settings = settings
+        self.instruments = instruments
+        self.image_display = image_display
+
+    def start(self):
+        for image_index, image in enumerate(self.images):
+            self.image_display.thread_safe_show_image(image)
+            grating_width = self.settings.grating_width / 1000
+            grating_height = self.settings.grating_height / 1000
+            self.instruments.sine_phase_plate_printing(image_index, grating_width, grating_height, self.settings.exposure_time, self.settings.laser_power)
+            self.instruments.wait_for_movement()
 
 
 class App(tk.Tk):
@@ -262,7 +297,7 @@ class StartScreen(ttk.Frame):
 
             self.grid_forget()
             FocusingScreen(self.master, self.settings, self.instruments)
-        except Exception as e:
+        except Exception:
             pass
 
     def button_settings(self):
@@ -290,6 +325,7 @@ class SettingsScreen(ttk.Frame):
         self.grid_rowconfigure(8, weight=1)
         self.grid_rowconfigure(9, weight=1)
         self.grid_rowconfigure(10, weight=1)
+        self.grid_rowconfigure(11, weight=1)
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
 
@@ -316,24 +352,27 @@ class SettingsScreen(ttk.Frame):
         self.entry_wavelength = ttk.Entry(self)
         self.entry_wavelength.insert(0, self.settings.wavelength)
         self.entry_wavelength.grid(row=4, column=1, padx=10)
+        self.entry_laser_power = ttk.Entry(self)
+        self.entry_laser_power.insert(0, self.settings.laser_power)
+        self.entry_laser_power.grid(row=5, column=1, padx=10)
         self.entry_y_min = ttk.Entry(self)
         self.entry_y_min.insert(0, self.settings.y_min)
-        self.entry_y_min.grid(row=5, column=1, padx=10)
+        self.entry_y_min.grid(row=6, column=1, padx=10)
         self.entry_y_peak_to_peak = ttk.Entry(self)
         self.entry_y_peak_to_peak.insert(0, self.settings.y_peak_to_peak)
-        self.entry_y_peak_to_peak.grid(row=6, column=1, padx=10)
+        self.entry_y_peak_to_peak.grid(row=7, column=1, padx=10)
         self.entry_laser_COM = ttk.Entry(self)
         self.entry_laser_COM.insert(0, self.settings.com_laser)
-        self.entry_laser_COM.grid(row=7, column=1, padx=10)
+        self.entry_laser_COM.grid(row=8, column=1, padx=10)
         self.entry_motion_controller_COM = ttk.Entry(self)
         self.entry_motion_controller_COM.insert(0, self.settings.com_motion_controller)
-        self.entry_motion_controller_COM.grid(row=8, column=1, padx=10)
+        self.entry_motion_controller_COM.grid(row=9, column=1, padx=10)
         self.entry_shutter_COM = ttk.Entry(self)
         self.entry_shutter_COM.insert(0, self.settings.com_shutter)
-        self.entry_shutter_COM.grid(row=9, column=1, padx=10)
+        self.entry_shutter_COM.grid(row=10, column=1, padx=10)
 
-        ttk.Button(self, text="apply", command=self.button_apply).grid(row=10, column=0)
-        ttk.Button(self, text="cancel", command=self.button_cancel).grid(row=10, column=1)
+        ttk.Button(self, text="apply", command=self.button_apply).grid(row=11, column=0)
+        ttk.Button(self, text="cancel", command=self.button_cancel).grid(row=11, column=1)
 
         self.grid(row=0, column=0, sticky="nsew")
 
@@ -342,6 +381,7 @@ class SettingsScreen(ttk.Frame):
         self.settings.grating_width = float(self.entry_grating_width.get())
         self.settings.grating_height = float(self.entry_grating_height.get())
         self.settings.wavelength = float(self.entry_wavelength.get())
+        self.settings.laser_power = float(self.entry_laser_power.get())
         self.settings.y_min = int(self.entry_y_min.get())
         self.settings.y_peak_to_peak = int(self.entry_y_peak_to_peak.get())
         self.settings.com_laser = self.entry_laser_COM.get()
@@ -407,7 +447,7 @@ class ProcessScreen(ttk.Frame):
                                                   self.settings.y_peak_to_peak)
 
         self.images = self.generator.generate_images()
-        self.current_image = None
+        self.image_display = ImageDisplay(1)
 
         self.grid_rowconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
@@ -434,13 +474,13 @@ class ProcessScreen(ttk.Frame):
         self.grid(row=0, column=0, sticky="nsew")
 
     def button_start(self):
-        image = self.images[-1]
-        self.current_image = ImageDisplay(1)
-        self.current_image.show_image(image)
+        pass
 
     def button_pause(self):
-        if self.current_image:
-            self.current_image.destroy()
+        pass
+
+    def printing(self):
+        PrintingThread(self.images, self.settings, self.instruments, self.image_display)
 
 
 if __name__ == "__main__":

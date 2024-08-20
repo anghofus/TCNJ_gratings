@@ -129,12 +129,12 @@ class InstrumentController:
         self.esp.move_to_coordinates(coordinates[0], coordinates[1])
 
     def sine_phase_plate_printing(self, image_index: int, grating_width: float, grating_height: float, exposure_time: float, laser_power: float):
-        assert image_index > 0, "image index must be grater than zero"
+        assert image_index >= 0, "image index must be grater than zero"
         assert grating_width > 0, "grating width must be grater than zero"
         assert exposure_time > 0, "exposure time must be grater than zero"
         assert 30 <= laser_power <= 300, "laser power must be between 30 and 300 mW"
-        
-        radius = grating_width * image_index
+
+        radius = grating_width * (image_index + 1)
         angular_speed = grating_height / (exposure_time * radius)
 
         self.esp.move_axis_relative(1, grating_width)
