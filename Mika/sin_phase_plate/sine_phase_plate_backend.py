@@ -5,6 +5,167 @@ from PIL import Image
 from shutter_controller import *
 from esp_controller import *
 from laser_controller import *
+import json
+import threading
+from threading import Thread
+
+
+# TODO: write log statements
+
+
+class Settings:
+    def __init__(self):
+        self.__radius = None
+        self.__focal_length = None
+
+        self.__exposure_time = 5
+        self.__grating_width = 70
+        self.__grating_height = 40
+        self.__wavelength = 633
+        self.__laser_power = 150
+        self.__y_min = 0
+        self.__y_peak_to_peak = 128
+        self.__com_laser = "/dev/ttyUSB0"
+        self.__com_motion_controller = "/dev/ttyUSB1"
+        self.__com_shutter = "/dev/ttyUSB2"
+
+    @property
+    def radius(self):
+        return self.__radius
+
+    @radius.setter
+    def radius(self, value: float):
+        assert value >= 0, "radius must be grater than zero!"
+        self.__radius = value
+
+    @property
+    def focal_length(self):
+        return self.__focal_length
+
+    @focal_length.setter
+    def focal_length(self, value: float):
+        assert value >= 0, "focal length must be grater than zero!"
+        self.__focal_length = value
+
+    @property
+    def exposure_time(self):
+        return self.__exposure_time
+
+    @exposure_time.setter
+    def exposure_time(self, value: float):
+        assert value >= 0, "Exposure time must be greater than zero!"
+        self.__exposure_time = value
+
+    @property
+    def grating_width(self):
+        return self.__grating_width
+
+    @grating_width.setter
+    def grating_width(self, value: float):
+        assert value >= 0, "Grating width must be greater than zero!"
+        self.__grating_width = value
+
+    @property
+    def grating_height(self):
+        return self.__grating_height
+
+    @grating_height.setter
+    def grating_height(self, value: float):
+        assert value >= 0, "Grating height must be greater than zero!"
+
+    @property
+    def wavelength(self):
+        return self.__wavelength
+
+    @wavelength.setter
+    def wavelength(self, value: float):
+        assert value >= 0, "wavelength must be greater than zero!"
+        self.__wavelength = value
+
+    @property
+    def laser_power(self):
+        return self.__laser_power
+
+    @laser_power.setter
+    def laser_power(self, value: float):
+        assert 30 <= value <= 300, "laser_power must be between 30 and 300 mW"
+        self.__laser_power = value
+
+    @property
+    def y_min(self):
+        return self.__y_min
+
+    @y_min.setter
+    def y_min(self, value):
+        assert 0 <= value <= 255, "y_min must be between 0 and 255"
+        self.__y_min = value
+
+    @property
+    def y_peak_to_peak(self):
+        return self.__y_peak_to_peak
+
+    @y_peak_to_peak.setter
+    def y_peak_to_peak(self, value):
+        assert 0 <= value <= 255, "y_peak_to_peak must be between 0 and 255"
+        self.__y_peak_to_peak = value
+
+    @property
+    def com_laser(self):
+        return self.__com_laser
+
+    @com_laser.setter
+    def com_laser(self, value: str):
+        self.__com_laser = value
+
+    @property
+    def com_motion_controller(self):
+        return self.__com_motion_controller
+
+    @com_motion_controller.setter
+    def com_motion_controller(self, value: str):
+        self.__com_motion_controller = value
+
+    @property
+    def com_shutter(self):
+        return self.__com_shutter
+
+    @com_shutter.setter
+    def com_shutter(self, value: str):
+        self.__com_shutter = value
+
+    def read_from_json(self):
+        try:
+            with open('settings.json', 'r') as settings_file:
+                settings = json.load(settings_file)
+                self.__exposure_time = settings['exposure_time']
+                self.__grating_width = settings['grating_width']
+                self.__grating_height = settings['grating_height']
+                self.__wavelength = settings['wavelength']
+                self.__laser_power = settings['laser_power']
+                self.__y_min = settings['y_min']
+                self.__y_peak_to_peak = settings['y_peak_to_peak']
+                self.__com_laser = settings['com_laser']
+                self.__com_motion_controller = settings['com_motion_controller']
+                self.__com_shutter = settings['com_shutter']
+
+        except FileNotFoundError:
+            self.write_to_json()
+
+    def write_to_json(self):
+        with open('settings.json', 'w') as settings_file:
+            settings = {
+                'exposure_time': self.__exposure_time,
+                'grating_width': self.__grating_width,
+                'grating_height': self.__grating_height,
+                'wavelength': self.__wavelength,
+                'laser_power': self.__laser_power,
+                'y_min': self.__y_min,
+                'y_peak_to_peak': self.__y_peak_to_peak,
+                'com_laser': self.__com_laser,
+                'com_motion_controller': self.__com_motion_controller,
+                'com_shutter': self.__com_shutter
+            }
+            json.dump(settings, settings_file, indent=4)
 
 
 class SinePhasePlateGeneration:
@@ -85,7 +246,7 @@ class SinePhasePlateGeneration:
     def __chirp_function(self, r):
         f = self.__y_min + ((1 + scipy.signal.sawtooth(math.radians((2 * np.pi) / (self.__focal_length * self.__wavelength) * r ** 2))) / 2) * self.__y_peak_to_peak
         return f
-        
+
 
 class InstrumentController:
     def __init__(self, port_laser, port_esp, port_shutter):
@@ -127,6 +288,7 @@ class InstrumentController:
         self.shutter.close_shutter()
 
         self.esp.move_to_coordinates(coordinates[0], coordinates[1])
+        self.esp.wait_for_movement()
 
     def sine_phase_plate_printing(self, image_index: int, grating_width: float, grating_height: float, exposure_time: float, laser_power: float):
         assert image_index >= 0, "image index must be grater than zero"
@@ -142,12 +304,81 @@ class InstrumentController:
         self.laser.send_command("L=1")
         self.laser.send_command(f"P={laser_power}")
         self.esp.move_axis_relative(3, 360, angular_speed)
-        
-        
-        
+
+
+class MotionControlThread(Thread):
+    def __init__(self, settings, command_queue, error_queue, monitor):
+        super().__init__()
+        self.settings = settings
+        self.command_queue = command_queue
+        self.error_queue = error_queue
+        self.monitor = monitor
+        self.instruments = InstrumentController(self.settings.com_laser, self.settings.com_motion_controller, self.settings.com_shutter)
+
+        self.function_map = {
+            'go_to_focus_location': self.monitor.go_to_focus_location,
+            'sine_phase_plate_printing': self.instruments.sine_phase_plate_printing,
+        }
+
+    def run(self):
+        while not self.monitor.kill_flag:
+            if self.command_queue.empty():
+                pass
+            else:
+                command = self.command_queue.get()
+
+    def __handle_command(self, command: list):
+        function_str = command[0]
+        parameters = command[1:]
+
+        try:
+            func = self.function_map.get(function_str, lambda: self.__default_function(function_str))
+            func(parameters)
+        except Exception as e:
+            print(f"System: Error in {function_str}: {e}")
+            self.error_queue.put(f"Error in {function_str}: {e}")
+
+    def __default_function(self, function_str):
+        print(f"System: Command {function_str} unknown")
+
+
+class MotionControlThreadMonitor:
+    def __init__(self):
+        # Attributes:
+        self.__busy_flag = None
+        self.__kill_flag = False
+
+        # Locks:
+        self.__busy_flag_lock = threading.Lock()
+        self.__kill_flag_lock = threading.Lock()
+
+    @property
+    def busy_flag(self):
+        with self.__busy_flag_lock:
+            return self.__busy_flag
+
+    @busy_flag.setter
+    def busy_flag(self, value: bool):
+        with self.__busy_flag_lock:
+            self.__busy_flag = value
+
+    @property
+    def kill_flag(self):
+        with self.__kill_flag_lock:
+            return self.__kill_flag
+
+    @kill_flag.setter
+    def kill_flag(self, value: bool):
+        with self.__kill_flag_lock:
+            self.__kill_flag = value
 
 
 
-
-
-
+'''
+        grating_width = self.settings.grating_width / 1000
+        grating_height = self.settings.grating_height / 1000
+        for image_index, image in enumerate(self.images):
+            self.image_display.thread_safe_show_image(image)
+            self.instruments.sine_phase_plate_printing(image_index, grating_width, grating_height, self.settings.exposure_time, self.settings.laser_power)
+            self.instruments.wait_for_movement()
+'''
