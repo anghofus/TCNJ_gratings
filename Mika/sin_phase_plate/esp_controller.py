@@ -418,6 +418,26 @@ class ESPController:
                 raise SerialError("Invalid reading for motion state")
         return motion_state
 
+    def get_axis_position(self):
+        self.clear_error_buffer()
+        position_str = self.send_command("TP")
+
+        position = position_str.strip().split(",")
+        position_float = [float(item) for item in position]
+
+        return position_float
+
+    def get_axis_speed(self):
+        self.clear_error_buffer()
+
+        speed_axis1_str = self.send_command("TV", 1)
+        speed_axis2_str = self.send_command("TV", 2)
+        speed_axis3_str = self.send_command("TV", 3)
+
+        speed_list = [float(speed_axis1_str), float(speed_axis2_str), float(speed_axis3_str)]
+
+        return speed_list
+
     def move_axis_absolut(self, axis, position, speed=1):
         """
         Move an axis to an absolute position at a specified speed.
@@ -628,3 +648,41 @@ class ESPController:
                 pass
 
         return True
+
+    def abort_movement(self):
+        """
+        Immediately halts all motion of the connected axes.
+
+        This method sends the "AB" (Abort) command to the ESP302 controller, which
+        immediately stops all ongoing motion for all connected axes. After issuing the abort
+        command, the method continuously checks the motion status to confirm that all axes
+        have stopped moving before returning.
+
+        This function is useful in emergency situations where it is critical to stop motion
+        immediately, such as when an unexpected obstacle is detected or if the system is not
+        behaving as expected.
+
+        Returns:
+        --------
+        bool
+            True when all motion has stopped and the axes are stationary.
+
+        Example:
+        --------
+        abort_movement()
+            Stops all axes immediately and waits until motion is completely halted.
+
+        Note:
+        -----
+        The abort operation may result in the loss of position information, and the
+        system may require re-homing after aborting the movement.
+        """
+        self.clear_error_buffer()
+        self.send_command("AB")
+
+        while any(self.get_motion_status()):
+            pass
+
+        return True
+
+# TODO: write a wait and monitor function
