@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 import math
 import scipy
@@ -308,21 +310,24 @@ class InstrumentController:
 
 
 class MotionControlThread(Thread):
-    def __init__(self, settings, command_queue, error_queue, monitor):
+    def __init__(self, settings, command_queue, error_queue, monitor, image_display):
         assert isinstance(settings, Settings), "settings must be a Settings object"
         assert isinstance(command_queue, queue.Queue), "command_queue must be a queue object"
-        assert isinstance(error_queue, queue.Queue), "error_queue must be a queue"
+        assert isinstance(error_queue, queue.Queue), "error_queue must be a queue object"
+        assert isinstance(monitor, MotionControlThreadMonitor), "monitor must be a MotionControlThreadMonitor object"
 
         super().__init__()
         self.settings = settings
         self.command_queue = command_queue
         self.error_queue = error_queue
         self.monitor = monitor
+        self.image_display = image_display
         self.instruments = InstrumentController(self.settings.port_laser, self.settings.port_motion_controller, self.settings.port_shutter)
 
         self.function_map = {
-            'go_to_focus_location': self.monitor.go_to_focus_location,
-            'sine_phase_plate_printing': self.instruments.sine_phase_plate_printing,
+            'go_to_focus_location': self.instruments.go_to_focus_location,
+            'print': self.instruments.sine_phase_plate_printing,
+            'start_up': self.instruments.esp.start_up()
         }
 
     def run(self):
@@ -331,6 +336,8 @@ class MotionControlThread(Thread):
                 pass
             else:
                 command = self.command_queue.get()
+                self.__handle_command(command)
+                self.command_queue.task_done()
 
     def __handle_command(self, command: list):
         function_str = command[0]
@@ -340,22 +347,65 @@ class MotionControlThread(Thread):
             func = self.function_map.get(function_str, lambda: self.__default_function(function_str))
             func(parameters)
         except Exception as e:
-            print(f"System: Error in {function_str}: {e}")
-            self.error_queue.put(f"Error in {function_str}: {e}")
+            print(f"System: Error in {repr(function_str)}: {e}")
+            self.error_queue.put(e)
 
     def __default_function(self, function_str):
         print(f"System: Command {function_str} unknown")
+        self.error_queue.put(f"Command {repr(function_str)} unknown")
 
+    def print(self, images):
+        grating_width = self.settings.grating_width / 1000
+        grating_height = self.settings.grating_height / 1000
+        for image_index, image in enumerate(images):
+            self.image_display.thread_safe_show_image(image)
+            self.instruments.sine_phase_plate_printing(image_index, grating_width, grating_height, self.settings.exposure_time, self.settings.laser_power)
+            self.wait()
+            if self.monitor.kill_flag:
+                break
+
+    def wait(self):
+        while any(self.instruments.esp.get_motion_status()):
+            start_time = time.time()
+            if self.monitor.kill_flag:
+                self.instruments.esp.abort_movement()
+            else:
+                position = self.instruments.esp.get_axis_position()
+                self.monitor.position_axis1 = position[0]
+                self.monitor.position_axis2 = position[1]
+                self.monitor.position_axis3 = position[2]
+                speed = self.instruments.esp.get_axis_speed()
+                self.monitor.speed_axis1 = speed[0]
+                self.monitor.speed_axis2 = speed[1]
+                self.monitor.speed_axis3 = speed[2]
+
+                while time.time() < start_time + 0.5:
+                    pass
+# TODO: Implement pausing
 
 class MotionControlThreadMonitor:
     def __init__(self):
         # Attributes:
         self.__busy_flag = None
         self.__kill_flag = False
+        self.__abort_movement_flag = False
+        self.__speed_axis1 = None
+        self.__speed_axis2 = None
+        self.__speed_axis3 = None
+        self.__position_axis1 = None
+        self.__position_axis2 = None
+        self.__position_axis3 = None
 
         # Locks:
         self.__busy_flag_lock = threading.Lock()
         self.__kill_flag_lock = threading.Lock()
+        self.__abort_movement_flag_lock = threading.Lock()
+        self.__speed_axis1_lock = threading.Lock()
+        self.__speed_axis2_lock = threading.Lock()
+        self.__speed_axis3_lock = threading.Lock()
+        self.__position_axis1_lock = threading.Lock()
+        self.__position_axis2_lock = threading.Lock()
+        self.__position_axis3_lock = threading.Lock()
 
     @property
     def busy_flag(self):
@@ -377,13 +427,72 @@ class MotionControlThreadMonitor:
         with self.__kill_flag_lock:
             self.__kill_flag = value
 
+    @property
+    def abort_movement_flag(self):
+        with self.__abort_movement_flag_lock:
+            return self.__abort_movement_flag
 
+    @abort_movement_flag.setter
+    def abort_movement_flag(self, value: bool):
+        with self.__abort_movement_flag_lock:
+            self.__abort_movement_flag = value
 
-'''
-        grating_width = self.settings.grating_width / 1000
-        grating_height = self.settings.grating_height / 1000
-        for image_index, image in enumerate(self.images):
-            self.image_display.thread_safe_show_image(image)
-            self.instruments.sine_phase_plate_printing(image_index, grating_width, grating_height, self.settings.exposure_time, self.settings.laser_power)
-            self.instruments.wait_for_movement()
-'''
+    @property
+    def speed_axis1(self):
+        with self.__speed_axis1_lock:
+            return self.__speed_axis1
+
+    @speed_axis1.setter
+    def speed_axis1(self, value):
+        with self.__speed_axis1_lock:
+            self.__speed_axis1 = value
+
+    @property
+    def speed_axis2(self):
+        with self.__speed_axis2_lock:
+            return self.__speed_axis2
+
+    @speed_axis2.setter
+    def speed_axis2(self, value):
+        with self.__speed_axis2_lock:
+            self.__speed_axis2 = value
+
+    @property
+    def speed_axis3(self):
+        with self.__speed_axis3_lock:
+            return self.__speed_axis3
+
+    @speed_axis3.setter
+    def speed_axis3(self, value):
+        with self.__speed_axis3_lock:
+            self.__speed_axis3 = value
+
+    @property
+    def position_axis2(self):
+        with self.__position_axis2_lock:
+            return self.__position_axis2
+
+    @property
+    def position_axis1(self):
+        with self.__position_axis1_lock:
+            return self.__position_axis1
+
+    @position_axis1.setter
+    def position_axis1(self, value):
+        with self.__position_axis1_lock:
+            self.__position_axis1 = value
+
+    @position_axis2.setter
+    def position_axis2(self, value):
+        with self.__position_axis2_lock:
+            self.__position_axis2 = value
+
+    @property
+    def position_axis3(self):
+        with self.__position_axis3_lock:
+            return self.__position_axis3
+
+    @position_axis3.setter
+    def position_axis3(self, value):
+        with self.__position_axis3_lock:
+            self.__position_axis3 = value
