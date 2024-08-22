@@ -8,6 +8,7 @@ from laser_controller import *
 import json
 import threading
 from threading import Thread
+import queue
 
 
 # TODO: write log statements
@@ -25,9 +26,9 @@ class Settings:
         self.__laser_power = 150
         self.__y_min = 0
         self.__y_peak_to_peak = 128
-        self.__com_laser = "/dev/ttyUSB0"
-        self.__com_motion_controller = "/dev/ttyUSB1"
-        self.__com_shutter = "/dev/ttyUSB2"
+        self.__port_laser = "/dev/ttyUSB0"
+        self.__port_motion_controller = "/dev/ttyUSB1"
+        self.__port_shutter = "/dev/ttyUSB2"
 
     @property
     def radius(self):
@@ -96,7 +97,7 @@ class Settings:
         return self.__y_min
 
     @y_min.setter
-    def y_min(self, value):
+    def y_min(self, value: int):
         assert 0 <= value <= 255, "y_min must be between 0 and 255"
         self.__y_min = value
 
@@ -105,33 +106,33 @@ class Settings:
         return self.__y_peak_to_peak
 
     @y_peak_to_peak.setter
-    def y_peak_to_peak(self, value):
+    def y_peak_to_peak(self, value: int):
         assert 0 <= value <= 255, "y_peak_to_peak must be between 0 and 255"
         self.__y_peak_to_peak = value
 
     @property
-    def com_laser(self):
-        return self.__com_laser
+    def port_laser(self):
+        return self.__port_laser
 
-    @com_laser.setter
-    def com_laser(self, value: str):
-        self.__com_laser = value
-
-    @property
-    def com_motion_controller(self):
-        return self.__com_motion_controller
-
-    @com_motion_controller.setter
-    def com_motion_controller(self, value: str):
-        self.__com_motion_controller = value
+    @port_laser.setter
+    def port_laser(self, value: str):
+        self.__port_laser = value
 
     @property
-    def com_shutter(self):
-        return self.__com_shutter
+    def port_motion_controller(self):
+        return self.__port_motion_controller
 
-    @com_shutter.setter
-    def com_shutter(self, value: str):
-        self.__com_shutter = value
+    @port_motion_controller.setter
+    def port_motion_controller(self, value: str):
+        self.__port_motion_controller = value
+
+    @property
+    def port_shutter(self):
+        return self.__port_shutter
+
+    @port_shutter.setter
+    def port_shutter(self, value: str):
+        self.__port_shutter = value
 
     def read_from_json(self):
         try:
@@ -144,9 +145,9 @@ class Settings:
                 self.__laser_power = settings['laser_power']
                 self.__y_min = settings['y_min']
                 self.__y_peak_to_peak = settings['y_peak_to_peak']
-                self.__com_laser = settings['com_laser']
-                self.__com_motion_controller = settings['com_motion_controller']
-                self.__com_shutter = settings['com_shutter']
+                self.__port_laser = settings['port_laser']
+                self.__port_motion_controller = settings['port_motion_controller']
+                self.__port_shutter = settings['port_shutter']
 
         except FileNotFoundError:
             self.write_to_json()
@@ -161,9 +162,9 @@ class Settings:
                 'laser_power': self.__laser_power,
                 'y_min': self.__y_min,
                 'y_peak_to_peak': self.__y_peak_to_peak,
-                'com_laser': self.__com_laser,
-                'com_motion_controller': self.__com_motion_controller,
-                'com_shutter': self.__com_shutter
+                'port_laser': self.__port_laser,
+                'port_motion_controller': self.__port_motion_controller,
+                'port_shutter': self.__port_shutter
             }
             json.dump(settings, settings_file, indent=4)
 
@@ -249,7 +250,7 @@ class SinePhasePlateGeneration:
 
 
 class InstrumentController:
-    def __init__(self, port_laser, port_esp, port_shutter):
+    def __init__(self, port_laser: str, port_esp: str, port_shutter: str):
         self.laser = LaserController(port_laser)
         self.esp = ESPController(port_esp)
         self.shutter = ShutterController(port_shutter)
@@ -308,12 +309,16 @@ class InstrumentController:
 
 class MotionControlThread(Thread):
     def __init__(self, settings, command_queue, error_queue, monitor):
+        assert isinstance(settings, Settings), "settings must be a Settings object"
+        assert isinstance(command_queue, queue.Queue), "command_queue must be a queue object"
+        assert isinstance(error_queue, queue.Queue), "error_queue must be a queue"
+
         super().__init__()
         self.settings = settings
         self.command_queue = command_queue
         self.error_queue = error_queue
         self.monitor = monitor
-        self.instruments = InstrumentController(self.settings.com_laser, self.settings.com_motion_controller, self.settings.com_shutter)
+        self.instruments = InstrumentController(self.settings.port_laser, self.settings.port_motion_controller, self.settings.port_shutter)
 
         self.function_map = {
             'go_to_focus_location': self.monitor.go_to_focus_location,

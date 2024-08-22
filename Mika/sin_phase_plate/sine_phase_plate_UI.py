@@ -10,7 +10,7 @@ import queue
 
 
 class ImageDisplay(tk.Toplevel):
-    def __init__(self, monitor):
+    def __init__(self, monitor: int):
         assert monitor > 0, "Monitor must be greater than zero!"
 
         super().__init__()
@@ -45,6 +45,7 @@ class ImageDisplay(tk.Toplevel):
             self.__update_image(image_object)
 
     def thread_safe_show_image(self, image_object):
+        assert isinstance(image_object, Image.Image), "Image must be a PIL Image object"
         self.after(0, self.show_image, image_object)
 
     def __update_image(self, image_object):
@@ -90,6 +91,9 @@ class App(tk.Tk):
 
 class StartScreen(ttk.Frame):
     def __init__(self, master, settings):
+        assert isinstance(master, App)
+        assert isinstance(settings, Settings)
+
         self.master = master
         self.settings = settings
         super().__init__(master)
@@ -128,9 +132,9 @@ class StartScreen(ttk.Frame):
         except Exception:
             return
 
-        self.master.instruments = InstrumentController(self.settings.com_laser,
-                                                       self.settings.com_motion_controller,
-                                                       self.settings.com_shutter)
+        self.master.instruments = InstrumentController(self.settings.port_laser,
+                                                       self.settings.port_motion_controller,
+                                                       self.settings.port_shutter)
         self.grid_forget()
         FocusingScreen(self.master, self.settings, self.master.instruments)
 
@@ -141,6 +145,9 @@ class StartScreen(ttk.Frame):
 
 class SettingsScreen(ttk.Frame):
     def __init__(self, master, settings):
+        assert isinstance(master, App)
+        assert isinstance(settings, Settings)
+
         self.master = master
         self.settings = settings
         super().__init__(master)
@@ -170,9 +177,9 @@ class SettingsScreen(ttk.Frame):
         ttk.Label(self, text="laser power in mW", font=("Arial", 20)).grid(row=5, column=0, padx=10, sticky=tk.W)
         ttk.Label(self, text="y_min", font=("Arial", 20)).grid(row=6, column=0, padx=10, sticky=tk.W)
         ttk.Label(self, text="y_peak_to_peak", font=("Arial", 20)).grid(row=7, column=0, padx=10, sticky=tk.W)
-        ttk.Label(self, text="laser COM", font=("Arial", 20)).grid(row=8, column=0, padx=10, sticky=tk.W)
-        ttk.Label(self, text="motion controller COM", font=("Arial", 20)).grid(row=9, column=0, padx=10, sticky=tk.W)
-        ttk.Label(self, text="shutter COM", font=("Arial", 20)).grid(row=10, column=0, padx=10, sticky=tk.W)
+        ttk.Label(self, text="port laser", font=("Arial", 20)).grid(row=8, column=0, padx=10, sticky=tk.W)
+        ttk.Label(self, text="port motion controller", font=("Arial", 20)).grid(row=9, column=0, padx=10, sticky=tk.W)
+        ttk.Label(self, text="port shutter", font=("Arial", 20)).grid(row=10, column=0, padx=10, sticky=tk.W)
 
         self.entry_exposure_time = ttk.Entry(self)
         self.entry_exposure_time.insert(0, self.settings.exposure_time)
@@ -195,15 +202,15 @@ class SettingsScreen(ttk.Frame):
         self.entry_y_peak_to_peak = ttk.Entry(self)
         self.entry_y_peak_to_peak.insert(0, self.settings.y_peak_to_peak)
         self.entry_y_peak_to_peak.grid(row=7, column=1, padx=10)
-        self.entry_laser_COM = ttk.Entry(self)
-        self.entry_laser_COM.insert(0, self.settings.com_laser)
-        self.entry_laser_COM.grid(row=8, column=1, padx=10)
-        self.entry_motion_controller_COM = ttk.Entry(self)
-        self.entry_motion_controller_COM.insert(0, self.settings.com_motion_controller)
-        self.entry_motion_controller_COM.grid(row=9, column=1, padx=10)
-        self.entry_shutter_COM = ttk.Entry(self)
-        self.entry_shutter_COM.insert(0, self.settings.com_shutter)
-        self.entry_shutter_COM.grid(row=10, column=1, padx=10)
+        self.entry_port_laser = ttk.Entry(self)
+        self.entry_port_laser.insert(0, self.settings.port_laser)
+        self.entry_port_laser.grid(row=8, column=1, padx=10)
+        self.entry_port_motion_controller = ttk.Entry(self)
+        self.entry_port_motion_controller.insert(0, self.settings.port_motion_controller)
+        self.entry_port_motion_controller.grid(row=9, column=1, padx=10)
+        self.entry_port_shutter = ttk.Entry(self)
+        self.entry_port_shutter.insert(0, self.settings.port_shutter)
+        self.entry_port_shutter.grid(row=10, column=1, padx=10)
 
         ttk.Button(self, text="apply", command=self.button_apply).grid(row=11, column=0)
         ttk.Button(self, text="cancel", command=self.button_cancel).grid(row=11, column=1)
@@ -218,9 +225,9 @@ class SettingsScreen(ttk.Frame):
         self.settings.laser_power = float(self.entry_laser_power.get())
         self.settings.y_min = int(self.entry_y_min.get())
         self.settings.y_peak_to_peak = int(self.entry_y_peak_to_peak.get())
-        self.settings.com_laser = self.entry_laser_COM.get()
-        self.settings.com_motion_controller = self.entry_motion_controller_COM.get()
-        self.settings.com_shutter = self.entry_shutter_COM.get()
+        self.settings.port_laser = self.entry_port_laser.get()
+        self.settings.port_motion_controller = self.entry_port_motion_controller.get()
+        self.settings.port_shutter = self.entry_port_shutter.get()
 
         self.settings.write_to_json()
 
@@ -234,6 +241,9 @@ class SettingsScreen(ttk.Frame):
 
 class FocusingScreen(ttk.Frame):
     def __init__(self, master, settings, instruments):
+        assert isinstance(master, App)
+        assert isinstance(settings, Settings)
+
         self.master = master
         self.settings = settings
         self.instruments = instruments
@@ -280,6 +290,9 @@ class FocusingScreen(ttk.Frame):
 
 class ProcessScreen(ttk.Frame):
     def __init__(self, master, settings, instruments):
+        assert isinstance(master, App)
+        assert isinstance(settings, Settings)
+
         self.master = master
         self.settings = settings
         self.instruments = instruments
