@@ -6,9 +6,6 @@ from PIL import Image, ImageTk
 import queue
 
 
-# TODO: write log statements
-
-
 class ImageDisplay(tk.Toplevel):
     def __init__(self, monitor: int):
         assert monitor > 0, "Monitor must be greater than zero!"
