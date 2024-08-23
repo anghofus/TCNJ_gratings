@@ -13,9 +13,6 @@ from threading import Thread
 import queue
 
 
-# TODO: write log statements
-
-
 class Settings:
     def __init__(self):
         self.__radius = None
@@ -32,6 +29,18 @@ class Settings:
         self.__port_motion_controller = "/dev/ttyUSB1"
         self.__port_shutter = "/dev/ttyUSB2"
 
+        print("System (Settings): Settings initialized\n"
+              f"\texposure time: {self.__exposure_time}\n"
+              f"\tgrating width: {self.__grating_width}\n"
+              f"\tgrating height: {self.__grating_height}\n"
+              f"\twavelength: {self.__wavelength}\n"
+              f"\tlaser power: {self.__laser_power}\n"
+              f"\ty_min: {self.__y_min}\n"
+              f"\ty_peak_to_peak: {self.__y_peak_to_peak}\n"
+              f"\tport_laser: {self.__port_laser}\n"
+              f"\tport_motion_controller: {self.__port_motion_controller}\n"
+              f"\tport_shutter: {self.__port_shutter}")
+
     @property
     def radius(self):
         return self.__radius
@@ -40,6 +49,7 @@ class Settings:
     def radius(self, value: float):
         assert value >= 0, "radius must be grater than zero!"
         self.__radius = value
+        print(f"System (Settings): radius set to {value}")
 
     @property
     def focal_length(self):
@@ -49,6 +59,7 @@ class Settings:
     def focal_length(self, value: float):
         assert value >= 0, "focal length must be grater than zero!"
         self.__focal_length = value
+        print(f"System (Settings): focal length set to {value}")
 
     @property
     def exposure_time(self):
@@ -58,6 +69,7 @@ class Settings:
     def exposure_time(self, value: float):
         assert value >= 0, "Exposure time must be greater than zero!"
         self.__exposure_time = value
+        print(f"System (Settings): exposure time set to {value}")
 
     @property
     def grating_width(self):
@@ -67,6 +79,7 @@ class Settings:
     def grating_width(self, value: float):
         assert value >= 0, "Grating width must be greater than zero!"
         self.__grating_width = value
+        print(f"System (Settings): grating width set to {value}")
 
     @property
     def grating_height(self):
@@ -75,6 +88,8 @@ class Settings:
     @grating_height.setter
     def grating_height(self, value: float):
         assert value >= 0, "Grating height must be greater than zero!"
+        self.__grating_height = value
+        print(f"System (Settings): grating height set to {value}")
 
     @property
     def wavelength(self):
@@ -84,6 +99,7 @@ class Settings:
     def wavelength(self, value: float):
         assert value >= 0, "wavelength must be greater than zero!"
         self.__wavelength = value
+        print(f"System (Settings): wavelength set to {value}")
 
     @property
     def laser_power(self):
@@ -93,6 +109,7 @@ class Settings:
     def laser_power(self, value: float):
         assert 30 <= value <= 300, "laser_power must be between 30 and 300 mW"
         self.__laser_power = value
+        print(f"System (Settings): laser_power set to {value}")
 
     @property
     def y_min(self):
@@ -102,6 +119,7 @@ class Settings:
     def y_min(self, value: int):
         assert 0 <= value <= 255, "y_min must be between 0 and 255"
         self.__y_min = value
+        print(f"System (Settings): y_min set to {value}")
 
     @property
     def y_peak_to_peak(self):
@@ -111,6 +129,7 @@ class Settings:
     def y_peak_to_peak(self, value: int):
         assert 0 <= value <= 255, "y_peak_to_peak must be between 0 and 255"
         self.__y_peak_to_peak = value
+        print(f"System (Settings): y_peak_to_peak set to {value}")
 
     @property
     def port_laser(self):
@@ -119,6 +138,7 @@ class Settings:
     @port_laser.setter
     def port_laser(self, value: str):
         self.__port_laser = value
+        print(f"System (Settings): port_laser set to {value}")
 
     @property
     def port_motion_controller(self):
@@ -127,6 +147,7 @@ class Settings:
     @port_motion_controller.setter
     def port_motion_controller(self, value: str):
         self.__port_motion_controller = value
+        print(f"System (Settings): port_motion_controller set to {value}")
 
     @property
     def port_shutter(self):
@@ -135,8 +156,10 @@ class Settings:
     @port_shutter.setter
     def port_shutter(self, value: str):
         self.__port_shutter = value
+        print(f"System (Settings): port_shutter set to {value}")
 
     def read_from_json(self):
+        print(f"System (Settings): read settings from json file")
         try:
             with open('settings.json', 'r') as settings_file:
                 settings = json.load(settings_file)
@@ -152,9 +175,11 @@ class Settings:
                 self.__port_shutter = settings['port_shutter']
 
         except FileNotFoundError:
+            print("System (Settings): json file not found, generating json file")
             self.write_to_json()
 
     def write_to_json(self):
+        print(f"System (Settings): writing settings to json file")
         with open('settings.json', 'w') as settings_file:
             settings = {
                 'exposure_time': self.__exposure_time,
@@ -230,10 +255,10 @@ class SinePhasePlateGeneration:
         for i in range(self.__linespace_width):
             r = i * self.__pixel_width
             self.__waveform.append(self.__chirp_function(r))
-        print("System: Waveform generated")
+        print("System (SinePhasePlateGeneration): Waveform generated")
 
     def __generate_slm_images(self):
-        print("System: Generating SLM images")
+        print("System (SinePhasePlateGeneration): Generating SLM images")
         images = []
         image_array = np.zeros((self.__slm_px_height, self.__slm_px_width), dtype=np.uint8)
         for i in range(self.__slm_count):
@@ -243,7 +268,7 @@ class SinePhasePlateGeneration:
                 image_array[j] = self.__waveform[start:stop]
             image = Image.fromarray(image_array)
             images.append(image)
-            print(f"System: {i+1} of {self.__slm_count} SLM images generated")
+            print(f"System (SinePhasePlateGeneration): {i+1} of {self.__slm_count} SLM images generated")
         return images
 
     def __chirp_function(self, r):
@@ -264,6 +289,8 @@ class InstrumentController:
         if not self.shutter.connection_check():
             raise Exception('Shutter not connected')
 
+        print("System (InstrumentController): instruments initialized")
+
         self.esp.start_up()
         self.shutter.close_shutter()
         self.laser.send_command("L=1")
@@ -274,6 +301,7 @@ class InstrumentController:
         self.shutter.close_connection()
 
     def go_to_focus_location(self, focus_location):
+        print(f"System (InstrumentController): go to focus location \"{focus_location}\"")
         if focus_location == "top":
             coordinates = (4.91, 22)
         elif focus_location == "bottom":
@@ -293,7 +321,12 @@ class InstrumentController:
         self.esp.move_to_coordinates(coordinates[0], coordinates[1])
         self.esp.wait_for_movement()
 
-    def sine_phase_plate_printing(self, image_index: int, grating_width: float, grating_height: float, exposure_time: float, laser_power: float):
+    def print_ring(self, image_index: int,
+                   grating_width: float,
+                   grating_height: float,
+                   exposure_time: float,
+                   laser_power: float):
+
         assert image_index >= 0, "image index must be grater than zero"
         assert grating_width > 0, "grating width must be grater than zero"
         assert exposure_time > 0, "exposure time must be grater than zero"
@@ -301,6 +334,8 @@ class InstrumentController:
 
         radius = grating_width * (image_index + 1)
         angular_speed = grating_height / (exposure_time * radius)
+
+        print(f"System (InstrumentController): print ring {image_index + 1} with radius {radius} and speed {angular_speed}")
 
         self.esp.move_axis_relative(1, grating_width)
         self.esp.wait_for_movement()
@@ -322,22 +357,31 @@ class MotionControlThread(Thread):
         self.error_queue = error_queue
         self.monitor = monitor
         self.image_display = image_display
-        self.instruments = InstrumentController(self.settings.port_laser, self.settings.port_motion_controller, self.settings.port_shutter)
+        self.instruments = InstrumentController(self.settings.port_laser,
+                                                self.settings.port_motion_controller,
+                                                self.settings.port_shutter)
 
         self.function_map = {
             'go_to_focus_location': self.instruments.go_to_focus_location,
-            'print': self.instruments.sine_phase_plate_printing,
-            'start_up': self.instruments.esp.start_up()
+            'print': self.print_phase_plate
         }
 
+        print("System (MotionControlThread): MotionControlThread initialized\n"
+              "\tavailable commands:\n"
+              f"\t {self.function_map}")
+
     def run(self):
+        print("System (MotionControlThread): thread started ")
         while not self.monitor.kill_flag:
             if self.command_queue.empty():
                 pass
             else:
                 command = self.command_queue.get()
+                print(f"System (MotionControlThread): Command received: {command}")
                 self.__handle_command(command)
                 self.command_queue.task_done()
+                print("System (MotionControlThread): Command done")
+        print("System (MotionControlThread): thread terminated")
 
     def __handle_command(self, command: list):
         function_str = command[0]
@@ -345,30 +389,35 @@ class MotionControlThread(Thread):
 
         try:
             func = self.function_map.get(function_str, lambda: self.__default_function(function_str))
-            func(parameters)
+            func(*parameters)
         except Exception as e:
-            print(f"System: Error in {repr(function_str)}: {e}")
+            print(f"System (MotionControlThread): Error in {repr(function_str)}: {e}")
             self.error_queue.put(e)
 
     def __default_function(self, function_str):
-        print(f"System: Command {function_str} unknown")
+        print(f"System (MotionControlThread): Command {function_str} unknown")
         self.error_queue.put(f"Command {repr(function_str)} unknown")
 
-    def print(self, images):
+    def print_phase_plate(self, images):
         grating_width = self.settings.grating_width / 1000
         grating_height = self.settings.grating_height / 1000
+
+        print(f"System (MotionControlThread): Printing phase plate")
+
         for image_index, image in enumerate(images):
             self.image_display.thread_safe_show_image(image)
-            self.instruments.sine_phase_plate_printing(image_index, grating_width, grating_height, self.settings.exposure_time, self.settings.laser_power)
+            self.instruments.print_ring(image_index, grating_width, grating_height, self.settings.exposure_time, self.settings.laser_power)
             self.wait()
             if self.monitor.kill_flag:
                 break
 
     def wait(self):
+        print(f"System (MotionControlThread): printing ring")
         while any(self.instruments.esp.get_motion_status()):
             start_time = time.time()
             if self.monitor.kill_flag:
-                self.instruments.esp.abort_movement()
+                print("System (MotionControlThread): kill flag detected, stop movement")
+                self.instruments.esp.stop_movement()
             else:
                 position = self.instruments.esp.get_axis_position()
                 self.monitor.position_axis1 = position[0]
@@ -381,7 +430,10 @@ class MotionControlThread(Thread):
 
                 while time.time() < start_time + 0.5:
                     pass
+                print("System (MotionControlThread): ring done")
+
 # TODO: Implement pausing
+
 
 class MotionControlThreadMonitor:
     def __init__(self):
