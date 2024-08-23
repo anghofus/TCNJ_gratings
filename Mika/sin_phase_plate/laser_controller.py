@@ -37,7 +37,7 @@ class LaserController:
     timeout values.
     """
     def __init__(self, port):
-        self.ser = serial.Serial(
+        self.__ser = serial.Serial(
             port=port,
             baudrate=19200,
             parity=serial.PARITY_NONE,
@@ -47,12 +47,12 @@ class LaserController:
         )
 
         print(f"Laser: Initializing\n"
-              f"\tport={self.ser.port}\n"
-              f"\tbaudrate={self.ser.baudrate}\n"
-              f"\tparity={self.ser.parity}\n"
-              f"\tstopbits={self.ser.stopbits}\n"
-              f"\tbytesize={self.ser.bytesize}\n"
-              f"\ttimeout={self.ser.timeout}")
+              f"\tport={self.__ser.port}\n"
+              f"\tbaudrate={self.__ser.baudrate}\n"
+              f"\tparity={self.__ser.parity}\n"
+              f"\tstopbits={self.__ser.stopbits}\n"
+              f"\tbytesize={self.__ser.bytesize}\n"
+              f"\ttimeout={self.__ser.timeout}")
 
         self.send_command(">=0")
 
@@ -107,8 +107,8 @@ class LaserController:
         -----
         Always close the connection when finished with the laser to prevent communication issues or resource leaks.
         """
-        self.ser.flush()
-        self.ser.close()
+        self.__ser.flush()
+        self.__ser.close()
         del self
         print("Laser: Connection closed")
 
@@ -147,9 +147,9 @@ class LaserController:
         checking processes.
         """
         full_command = f"{command}\r"
-        self.ser.write(full_command.encode())
+        self.__ser.write(full_command.encode())
 
-        response = self.ser.read_until(b'\r\n').decode()
+        response = self.__ser.read_until(b'\r\n').decode()
         if "\x00" in response:
             print(f"Laser: Command {repr({full_command})} is unknown")
             raise SerialError("Command unknown")

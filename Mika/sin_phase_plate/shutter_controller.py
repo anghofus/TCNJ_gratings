@@ -45,7 +45,7 @@ class ShutterController:
     Before using this class, ensure that the serial port is accessible, the controller is powered on, and the shutter is in a known state.
     """
     def __init__(self, port):
-        self.ser = serial.Serial(
+        self.__ser = serial.Serial(
             port=port,
             baudrate=9600,
             parity=serial.PARITY_NONE,
@@ -54,12 +54,12 @@ class ShutterController:
             timeout=0.5
         )
         print(f"Shutter: Initializing\n"
-              f"\tport={self.ser.port}\n"
-              f"\tbaudrate={self.ser.baudrate}\n"
-              f"\tparity={self.ser.parity}\n"
-              f"\tstopbits={self.ser.stopbits}\n"
-              f"\tbytesize={self.ser.bytesize}\n"
-              f"\ttimeout={self.ser.timeout}")
+              f"\tport={self.__ser.port}\n"
+              f"\tbaudrate={self.__ser.baudrate}\n"
+              f"\tparity={self.__ser.parity}\n"
+              f"\tstopbits={self.__ser.stopbits}\n"
+              f"\tbytesize={self.__ser.bytesize}\n"
+              f"\ttimeout={self.__ser.timeout}")
 
     def connection_check(self):
         """
@@ -82,8 +82,8 @@ class ShutterController:
         Closes the serial connection to the SC10 controller and deletes the instance.
         This function should be called when the communication with the device is no longer needed.
         """
-        self.ser.flush()
-        self.ser.close()
+        self.__ser.flush()
+        self.__ser.close()
         del self
         print("Shutter: Connection closed")
 
@@ -98,9 +98,9 @@ class ShutterController:
             str: The response received from the controller.
         """
         full_command = f"{command}\r"
-        self.ser.write(full_command.encode())
+        self.__ser.write(full_command.encode())
 
-        response = repr(self.ser.read_until(b'>').decode())
+        response = repr(self.__ser.read_until(b'>').decode())
 
         print(f"Shutter: Command sent: {repr(full_command)}, response: {repr(response)}")
 

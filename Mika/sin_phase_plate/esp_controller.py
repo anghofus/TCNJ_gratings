@@ -63,7 +63,7 @@ class ESPController:
         Waits until all axes have completed their movements and are stationary.
     """
     def __init__(self, port: str):
-        self.ser = serial.Serial(
+        self.__ser = serial.Serial(
             port=port,
             baudrate=19200,
             parity=serial.PARITY_NONE,
@@ -74,13 +74,13 @@ class ESPController:
         )
 
         print(f"ESP: Initializing\n"
-              f"\tport={self.ser.port}\n"
-              f"\tbaudrate={self.ser.baudrate}\n"
-              f"\tparity={self.ser.parity}\n"
-              f"\tstopbits={self.ser.stopbits}\n"
-              f"\tbytesize={self.ser.bytesize}\n"
-              f"\trtscts={self.ser.rtscts}\n"
-              f"\ttimeout={self.ser.timeout}")
+              f"\tport={self.__ser.port}\n"
+              f"\tbaudrate={self.__ser.baudrate}\n"
+              f"\tparity={self.__ser.parity}\n"
+              f"\tstopbits={self.__ser.stopbits}\n"
+              f"\tbytesize={self.__ser.bytesize}\n"
+              f"\trtscts={self.__ser.rtscts}\n"
+              f"\ttimeout={self.__ser.timeout}")
 
     def connection_check(self):
         """
@@ -158,8 +158,8 @@ class ESPController:
        -----
        Ensure that all necessary commands have been sent and that the controller is in a safe state before closing the connection.
        """
-        self.ser.flush()
-        self.ser.close()
+        self.__ser.flush()
+        self.__ser.close()
         del self
         print("ESP: Connection closed")
 
@@ -216,9 +216,9 @@ class ESPController:
         full_command = f"{xx_str}{command}{nn_str}\r".encode()
         if debug:
             print(full_command)
-        self.ser.write(full_command)
+        self.__ser.write(full_command)
 
-        response = self.ser.read_until(b'\r\r\n').decode()
+        response = self.__ser.read_until(b'\r\r\n').decode()
         print(f"ESP: Command sent: {repr(full_command)}, response: {repr(response)}")
         return response
 
@@ -751,5 +751,3 @@ class ESPController:
 
         print("ESP: Movement stopped")
         return True
-
-# TODO: write a wait and monitor function
