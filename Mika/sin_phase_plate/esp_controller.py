@@ -419,22 +419,67 @@ class ESPController:
         return motion_state
 
     def get_axis_position(self):
-        self.clear_error_buffer()
+        """
+        Retrieves the current position of all axes.
+
+        This method queries the ESP302 controller for the positions of all three axes (X, Y, and Phi).
+        The positions are returned as a list of floats, corresponding to the positions of the axes in user-defined units.
+
+        Returns:
+        --------
+        List[float]
+            A list containing the current positions of the X, Y, and Phi axes.
+
+        Example:
+        --------
+        positions = get_axis_position()
+            Retrieves the current positions of all three axes and prints them.
+
+        Note:
+        -----
+        This method is useful for obtaining the precise position of each axis, which is essential
+        for tasks that require accurate positioning.
+        """
+
         position_str = self.send_command("TP")
 
         position = position_str.strip().split(",")
         position_float = [float(item) for item in position]
 
+        print(f"ESP: get axis position\n\tAxis 1: {position_float[0]}\n\tAxis 2: {position_float[1]}\n\tAxis 3: {position_float[2]}")
+
         return position_float
 
     def get_axis_speed(self):
-        self.clear_error_buffer()
+        """
+        Retrieves the current speed of all axes.
+
+        This method queries the ESP302 controller for the current speeds of the X, Y, and Phi axes.
+        The speeds are returned as a list of floats, corresponding to the speeds of the axes in units/second.
+
+        Returns:
+        --------
+        List[float]
+            A list containing the current speeds of the X, Y, and Phi axes.
+
+        Example:
+        --------
+        speeds = get_axis_speed()
+            Retrieves the current speeds of all three axes and prints them.
+
+        Note:
+        -----
+        This method is useful for monitoring the speed at which each axis is moving, which can
+        be critical for applications that require precise control of motion.
+        """
 
         speed_axis1_str = self.send_command("TV", 1)
         speed_axis2_str = self.send_command("TV", 2)
         speed_axis3_str = self.send_command("TV", 3)
 
         speed_list = [float(speed_axis1_str), float(speed_axis2_str), float(speed_axis3_str)]
+
+        print(f"ESP: get axis speed\n\tAxis 1: {speed_list[0]}\n\tAxis 2: {speed_list[1]}\n\tAxis 3: {speed_list[2]}")
 
         return speed_list
 
@@ -469,7 +514,6 @@ class ESPController:
         - XX: Erase program.
         """
 
-        self.clear_error_buffer()
         assert 0 < axis <= 3, "axis must be between 1 and 3"
         if 0 <= axis <= 2:
             max_position = 25
@@ -542,7 +586,6 @@ class ESPController:
            and restored afterward.
 
            """
-        self.clear_error_buffer()
         assert 0 < axis <= 3, "axis must be between 1 and 3"
         max_speed = self.send_command("VU", axis, '?')
         assert speed <= int(max_speed), f"speed can't be higher than {max_speed}"
@@ -636,7 +679,6 @@ class ESPController:
         -----
         This method is useful for ensuring that subsequent commands are not issued while the axes are still in motion.
         """
-        self.clear_error_buffer()
         while any(self.get_motion_status()):
             time.sleep(0.1)
 
@@ -649,40 +691,65 @@ class ESPController:
 
         return True
 
-    def abort_movement(self):
+    def emergency_stop(self):
         """
-        Immediately halts all motion of the connected axes.
+        Immediately stops all motion of the axes.
 
-        This method sends the "AB" (Abort) command to the ESP302 controller, which
-        immediately stops all ongoing motion for all connected axes. After issuing the abort
-        command, the method continuously checks the motion status to confirm that all axes
-        have stopped moving before returning.
-
-        This function is useful in emergency situations where it is critical to stop motion
-        immediately, such as when an unexpected obstacle is detected or if the system is not
-        behaving as expected.
+        This method sends an emergency stop command to the ESP302 controller, halting all motion
+        on all axes. The method waits until all axes have stopped moving before returning.
 
         Returns:
         --------
         bool
-            True when all motion has stopped and the axes are stationary.
+            True when the emergency stop is successfully executed.
 
         Example:
         --------
-        abort_movement()
-            Stops all axes immediately and waits until motion is completely halted.
+        emergency_stop()
+            Initiates an emergency stop on all axes.
 
         Note:
         -----
-        The abort operation may result in the loss of position information, and the
-        system may require re-homing after aborting the movement.
+        This method should be used in situations where immediate cessation of motion is required,
+        such as to prevent collisions or when an unexpected situation occurs.
         """
-        self.clear_error_buffer()
-        self.send_command("AB")
+        print("ESP: Emergency stop initiated!")
+
+        self.send_command_no_error_check("AB")
+
+        while any(self.get_motion_status()):
+            pass
+        print("ESP: Emergency stop successful")
+        return True
+
+    def stop_movement(self):
+        """
+        Stops any ongoing movement of the axes.
+
+        This method sends a stop command to the ESP302 controller to halt any ongoing motion
+        on all axes. It waits until all axes have stopped moving before returning.
+
+        Returns:
+        --------
+        bool
+            True when all motion has stopped successfully.
+
+        Example:
+        --------
+        stop_movement()
+            Stops any ongoing movement of the axes.
+
+        Note:
+        -----
+        This method can be used to stop the axes in a controlled manner, without the abruptness
+        of an emergency stop. It is useful for routine stopping of motion during normal operation.
+        """
+        self.send_command("ST")
 
         while any(self.get_motion_status()):
             pass
 
+        print("ESP: Movement stopped")
         return True
 
 # TODO: write a wait and monitor function
