@@ -22,7 +22,7 @@ class ImageDisplay(tk.Toplevel):
         second_monitor = monitors[monitor]
 
         self.geometry(f"{second_monitor.width}x{second_monitor.height}+{second_monitor.x}+{second_monitor.y}")
-        self.attributes("-fullscreen", True)
+        #self.attributes("-fullscreen", True)
         self.configure(background='black')
 
         # Initialize the label to None
@@ -63,9 +63,11 @@ class App(tk.Tk):
         super().__init__()
 
         self.settings = Settings()
-        self.instruments = None
 
-        # TODO: Initialize Motion Control Thread, Motion Control Thread Monitor, command_queue and error queue
+        self.command_queue = queue.Queue()
+        self.error_queue = queue.Queue()
+        self.motion_control_monitor = MotionControlThreadMonitor()
+        self.image_display = ImageDisplay(1)
 
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
@@ -76,23 +78,38 @@ class App(tk.Tk):
 
         self.protocol("WM_DELETE_WINDOW", self.close_application)
 
-        self.start_screen = StartScreen(self, self.settings)
+        self.start_screen = StartScreen(self,
+                                        self.settings,
+                                        self.command_queue,
+                                        self.error_queue,
+                                        self.motion_control_monitor)
 
         self.mainloop()
 
     def close_application(self):
-        if self.instruments is not None:
-            self.instruments.close_connection()
+        self.motion_control_monitor.kill_flag = True
         self.destroy()
+
+    def error_check(self):
+        if self.error_queue.empty():
+            return True
+        else:
+            error = self.error_queue.get()
+            self.error_queue.task_done()
+            raise Exception(error)
 
 
 class StartScreen(ttk.Frame):
-    def __init__(self, master, settings):
+    def __init__(self, master, settings, command_queue, error_queue, motion_control_monitor):
         assert isinstance(master, App)
         assert isinstance(settings, Settings)
 
         self.master = master
         self.settings = settings
+        self.command_queue = command_queue
+        self.error_queue = error_queue
+        self.motion_control_monitor = motion_control_monitor
+
         super().__init__(master)
 
         self.grid_columnconfigure(0, weight=1)
@@ -129,24 +146,31 @@ class StartScreen(ttk.Frame):
         except Exception:
             return
 
-        self.master.instruments = InstrumentController(self.settings.port_laser,
-                                                       self.settings.port_motion_controller,
-                                                       self.settings.port_shutter)
+        motion_control_thread = MotionControlThread(self.settings,
+                                                    self.command_queue,
+                                                    self.error_queue,
+                                                    self.motion_control_monitor,
+                                                    self.master.image_display)
+        motion_control_thread.start()
+
         self.grid_forget()
-        FocusingScreen(self.master, self.settings, self.master.instruments)
+        FocusingScreen(self.master, self.settings, self.command_queue, self.error_queue, self.motion_control_monitor)
 
     def button_settings(self):
         self.grid_forget()
-        SettingsScreen(self.master, self.settings)
+        SettingsScreen(self.master, self.settings, self.command_queue, self.error_queue, self.motion_control_monitor)
 
 
 class SettingsScreen(ttk.Frame):
-    def __init__(self, master, settings):
+    def __init__(self, master, settings, command_queue, error_queue, motion_control_monitor):
         assert isinstance(master, App)
         assert isinstance(settings, Settings)
 
         self.master = master
         self.settings = settings
+        self.command_queue = command_queue
+        self.error_queue = error_queue
+        self.motion_control_monitor = motion_control_monitor
         super().__init__(master)
 
         self.settings.read_from_json()
@@ -229,21 +253,24 @@ class SettingsScreen(ttk.Frame):
         self.settings.write_to_json()
 
         self.grid_forget()
-        StartScreen(self.master, self.settings)
+        StartScreen(self.master, self.settings, self.command_queue, self.error_queue, self.motion_control_monitor)
 
     def button_cancel(self):
         self.grid_forget()
-        StartScreen(self.master, self.settings)
+        StartScreen(self.master, self.settings, self.command_queue, self.error_queue, self.motion_control_monitor)
 
 
 class FocusingScreen(ttk.Frame):
-    def __init__(self, master, settings, instruments):
+    def __init__(self, master, settings, command_queue, error_queue, motion_control_monitor):
         assert isinstance(master, App)
         assert isinstance(settings, Settings)
 
         self.master = master
         self.settings = settings
-        self.instruments = instruments
+        self.command_queue = command_queue
+        self.error_queue = error_queue
+        self.motion_control_monitor = motion_control_monitor
+
         super().__init__(master)
 
         self.grid_rowconfigure(0, weight=1)
@@ -260,49 +287,58 @@ class FocusingScreen(ttk.Frame):
                                                                   columnspan=3,
                                                                   pady=10)
 
-        ttk.Button(self, text="top", command=lambda: self.instruments.go_to_focus_location("top")).grid(row=1,
-                                                                                                        column=1,
-                                                                                                        sticky=tk.S)
-        ttk.Button(self, text="center", command=lambda: self.instruments.go_to_focus_location("center")).grid(row=2,
-                                                                                                              column=1)
-        ttk.Button(self, text="bottom", command=lambda: self.instruments.go_to_focus_location("bottom")).grid(row=3,
-                                                                                                              column=1,
-                                                                                                              sticky=tk.N)
-        ttk.Button(self, text="left", command=lambda: self.instruments.go_to_focus_location("left")).grid(row=2,
-                                                                                                          column=0,
-                                                                                                          sticky=tk.E)
-        ttk.Button(self, text="right", command=lambda: self.instruments.go_to_focus_location("right")).grid(row=2,
-                                                                                                            column=2,
-                                                                                                            sticky=tk.W)
+        ttk.Button(self, text="top", command=lambda: self.go_to_focus_location("top")).grid(row=1,
+                                                                                            column=1,
+                                                                                            sticky=tk.S)
+        ttk.Button(self, text="center", command=lambda: self.go_to_focus_location("center")).grid(row=2,
+                                                                                                  column=1)
+        ttk.Button(self, text="bottom", command=lambda: self.go_to_focus_location("bottom")).grid(row=3,
+                                                                                                  column=1,
+                                                                                                  sticky=tk.N)
+        ttk.Button(self, text="left", command=lambda: self.go_to_focus_location("left")).grid(row=2,
+                                                                                              column=0,
+                                                                                              sticky=tk.E)
+        ttk.Button(self, text="right", command=lambda: self.go_to_focus_location("right")).grid(row=2,
+                                                                                                column=2,
+                                                                                                sticky=tk.W)
 
         ttk.Button(self, text="finish", command=self.button_finish).grid(row=4, column=0, columnspan=3)
 
         self.grid(row=0, column=0, sticky="nsew")
 
     def button_finish(self):
-        self.instruments.shutter.close_shutter()
+        self.command_queue.put(['close_shutter'])
+        self.command_queue.put(['go_to_focus_location', 'center'])
+        self.error_check()
         self.grid_forget()
-        ProcessScreen(self.master, self.settings, self.instruments)
+        ProcessScreen(self.master,
+                      self.settings,
+                      self.command_queue,
+                      self.error_queue,
+                      self.motion_control_monitor)
+
+    def go_to_focus_location(self, focused_location: str):
+        self.command_queue.put(['go_to_focus_location', focused_location])
+        self.error_check()
+
+    def error_check(self):
+        self.master.error_check()
+        if self.motion_control_monitor.busy_flag:
+            self.after(500, self.error_check)
 
 
 class ProcessScreen(ttk.Frame):
-    def __init__(self, master, settings, instruments):
+    def __init__(self, master, settings, command_queue, error_queue, motion_control_monitor):
         assert isinstance(master, App)
         assert isinstance(settings, Settings)
 
         self.master = master
         self.settings = settings
-        self.instruments = instruments
+        self.command_queue = command_queue
+        self.error_queue = error_queue
+        self.motion_control_monitor = motion_control_monitor
+
         super().__init__(master)
-
-        self.generator = SinePhasePlateGeneration(self.settings.radius,
-                                                  self.settings.focal_length,
-                                                  self.settings.wavelength,
-                                                  self.settings.grating_width,
-                                                  self.settings.y_min,
-                                                  self.settings.y_peak_to_peak)
-
-        self.images = self.generator.generate_images()
 
         self.grid_rowconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
@@ -310,7 +346,6 @@ class ProcessScreen(ttk.Frame):
         self.grid_rowconfigure(3, weight=1)
         self.grid_rowconfigure(4, weight=1)
         self.grid_rowconfigure(5, weight=1)
-        self.grid_rowconfigure(6, weight=1)
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
         self.grid_columnconfigure(2, weight=1)
@@ -321,27 +356,51 @@ class ProcessScreen(ttk.Frame):
         self.label_status.grid(row=1, column=0, sticky=tk.E, padx=10)
         self.label_progress = ttk.Label(self, text="Progress:", font=("Arial", 20, 'bold'))
         self.label_progress.grid(row=2, column=0, sticky=tk.E, padx=10)
-        self.label_time_left = ttk.Label(self, text="Time left:", font=("Arial", 20, 'bold'))
-        self.label_time_left.grid(row=3, column=0, sticky=tk.E, padx=10)
         self.label_angular_velocity = ttk.Label(self, text="Angular velocity:", font=("Arial", 20, 'bold'))
-        self.label_angular_velocity.grid(row=4, column=0, sticky=tk.E, padx=10)
+        self.label_angular_velocity.grid(row=3, column=0, sticky=tk.E, padx=10)
         self.label_position = ttk.Label(self, text="Position:", font=("Arial", 20, 'bold'))
-        self.label_position.grid(row=5, column=0, sticky=tk.E, padx=10)
+        self.label_position.grid(row=4, column=0, sticky=tk.E, padx=10)
+
+        self.label_status_value = ttk.Label(self, text="not started", font=("Arial", 20))
+        self.label_status_value.grid(row=1, column=1, sticky=tk.W, padx=10)
+        self.label_progress_value = ttk.Label(self, text="---", font=("Arial", 20, 'bold'))
+        self.label_progress_value.grid(row=2, column=1, sticky=tk.W, padx=10)
+        self.label_angular_velocity_value = ttk.Label(self, text="0", font=("Arial", 20, 'bold'))
+        self.label_angular_velocity_value.grid(row=3, column=1, sticky=tk.W, padx=10)
+        self.label_position_value = ttk.Label(self, text="---", font=("Arial", 20, 'bold'))
+        self.label_position_value.grid(row=4, column=1, sticky=tk.W, padx=10)
 
         self.button_start = ttk.Button(self, text="Start", command=self.method_button_start)
-        self.button_start.grid(row=6, column=0, columnspan=3, sticky=tk.W, padx=50)
-        self.button_pause = ttk.Button(self, text="Pause", command=self.method_button_pause)
-        self.button_pause.grid(row=6, column=0, columnspan=3, padx=10)
-        self.button_cancel = ttk.Button(self, text="Cancel")
-        self.button_cancel.grid(row=6, column=0, columnspan=3, sticky=tk.E, padx=50)
+        self.button_start.grid(row=5, column=0, columnspan=3, sticky=tk.W, padx=50)
+        self.button_cancel = ttk.Button(self, text="Cancel", command=self.method_button_cancel)
+        self.button_cancel.grid(row=5, column=0, columnspan=3, sticky=tk.E, padx=50)
 
         self.grid(row=0, column=0, sticky="nsew")
 
     def method_button_start(self):
-        pass
+        self.command_queue.put(['print'])
+        self.update_label()
+        self.error_check()
 
-    def method_button_pause(self):
-        pass
+    def method_button_cancel(self):
+        self.master.close_application()
+
+    def update_label(self):
+        if self.motion_control_monitor.busy_flag:
+            self.label_status_value.configure(text="running")
+        else:
+            self.label_status_value.configure(text="not running")
+        self.label_progress_value.configure(text=f"{self.motion_control_monitor.ring_counter} / {self.motion_control_monitor.rings_total}")
+        self.label_angular_velocity_value.configure(text=f"{self.motion_control_monitor.speed_axis3} deg/s")
+        self.label_position_value.configure(text=f"X: {self.motion_control_monitor.position_axis1} mm"
+                                                 f"Y: {self.motion_control_monitor.position_axis2} mm"
+                                                 f"PHI: {self.motion_control_monitor.position_axis3} deg")
+        self.after(500, self.update_label)
+
+    def error_check(self):
+        self.master.error_check()
+        if self.motion_control_monitor.busy_flag:
+            self.after(500, self.error_check)
 
 
 if __name__ == "__main__":

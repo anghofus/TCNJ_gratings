@@ -1,5 +1,3 @@
-import time
-
 import numpy as np
 import math
 import scipy
@@ -335,7 +333,8 @@ class InstrumentController:
         radius = grating_width * (image_index + 1)
         angular_speed = grating_height / (exposure_time * radius)
 
-        print(f"System (InstrumentController): print ring {image_index + 1} with radius {radius} and speed {angular_speed}")
+        print(f"System (InstrumentController): print ring {image_index + 1}"
+              f" with radius {radius} and speed {angular_speed}")
 
         self.esp.move_axis_relative(1, grating_width)
         self.esp.wait_for_movement()
@@ -363,12 +362,16 @@ class MotionControlThread(Thread):
 
         self.function_map = {
             'go_to_focus_location': self.instruments.go_to_focus_location,
-            'print': self.print_phase_plate
+            'print': self.print_phase_plate,
+            'close_connection': self.instruments.close_connection,
+            'open_shutter': self.instruments.shutter.open_shutter,
+            'close_shutter': self.instruments.shutter.close_shutter,
+            'send_command_to_laser': self.instruments.laser.send_command
         }
 
         print("System (MotionControlThread): MotionControlThread initialized\n"
               "\tavailable commands:\n"
-              f"\t {self.function_map}")
+              f"\t{self.function_map}")
 
     def run(self):
         print("System (MotionControlThread): thread started ")
@@ -376,11 +379,14 @@ class MotionControlThread(Thread):
             if self.command_queue.empty():
                 pass
             else:
+                self.monitor.busy_flag = True
                 command = self.command_queue.get()
                 print(f"System (MotionControlThread): Command received: {command}")
                 self.__handle_command(command)
                 self.command_queue.task_done()
+                self.monitor.busy_flag = False
                 print("System (MotionControlThread): Command done")
+        self.instruments.close_connection()
         print("System (MotionControlThread): thread terminated")
 
     def __handle_command(self, command: list):
@@ -398,7 +404,17 @@ class MotionControlThread(Thread):
         print(f"System (MotionControlThread): Command {function_str} unknown")
         self.error_queue.put(f"Command {repr(function_str)} unknown")
 
-    def print_phase_plate(self, images):
+    def print_phase_plate(self):
+        generator = SinePhasePlateGeneration(self.settings.radius,
+                                             self.settings.focal_length,
+                                             self.settings.wavelength,
+                                             self.settings.grating_width,
+                                             self.settings.y_min,
+                                             self.settings.y_peak_to_peak)
+
+        images = generator.generate_images()
+        self.monitor.rings_total = len(images)
+
         grating_width = self.settings.grating_width / 1000
         grating_height = self.settings.grating_height / 1000
 
@@ -406,8 +422,13 @@ class MotionControlThread(Thread):
 
         for image_index, image in enumerate(images):
             self.image_display.thread_safe_show_image(image)
-            self.instruments.print_ring(image_index, grating_width, grating_height, self.settings.exposure_time, self.settings.laser_power)
+            self.instruments.print_ring(image_index,
+                                        grating_width,
+                                        grating_height,
+                                        self.settings.exposure_time,
+                                        self.settings.laser_power)
             self.wait()
+            self.monitor.ring_counter += 1
             if self.monitor.kill_flag:
                 break
 
@@ -432,26 +453,26 @@ class MotionControlThread(Thread):
                     pass
                 print("System (MotionControlThread): ring done")
 
-# TODO: Implement pausing
-
 
 class MotionControlThreadMonitor:
     def __init__(self):
         # Attributes:
-        self.__busy_flag = None
+        self.__busy_flag = False
         self.__kill_flag = False
-        self.__abort_movement_flag = False
-        self.__speed_axis1 = None
-        self.__speed_axis2 = None
-        self.__speed_axis3 = None
-        self.__position_axis1 = None
-        self.__position_axis2 = None
-        self.__position_axis3 = None
+        self.__ring_counter = 1
+        self.__rings_total = None
+        self.__speed_axis1 = "---"
+        self.__speed_axis2 = "---"
+        self.__speed_axis3 = "---"
+        self.__position_axis1 = "---"
+        self.__position_axis2 = "---"
+        self.__position_axis3 = "---"
 
         # Locks:
         self.__busy_flag_lock = threading.Lock()
         self.__kill_flag_lock = threading.Lock()
-        self.__abort_movement_flag_lock = threading.Lock()
+        self.__ring_counter_lock = threading.Lock()
+        self.__rings_total_lock = threading.Lock()
         self.__speed_axis1_lock = threading.Lock()
         self.__speed_axis2_lock = threading.Lock()
         self.__speed_axis3_lock = threading.Lock()
@@ -480,14 +501,24 @@ class MotionControlThreadMonitor:
             self.__kill_flag = value
 
     @property
-    def abort_movement_flag(self):
-        with self.__abort_movement_flag_lock:
-            return self.__abort_movement_flag
+    def ring_counter(self):
+        with self.__ring_counter_lock:
+            return self.__ring_counter
 
-    @abort_movement_flag.setter
-    def abort_movement_flag(self, value: bool):
-        with self.__abort_movement_flag_lock:
-            self.__abort_movement_flag = value
+    @ring_counter.setter
+    def ring_counter(self, value: int):
+        with self.__ring_counter_lock:
+            self.__ring_counter = value
+
+    @property
+    def rings_total(self):
+        with self.__rings_total_lock:
+            return self.__rings_total
+
+    @rings_total.setter
+    def rings_total(self, value: int):
+        with self.__rings_total_lock:
+            self.__rings_total = value
 
     @property
     def speed_axis1(self):
@@ -520,11 +551,6 @@ class MotionControlThreadMonitor:
             self.__speed_axis3 = value
 
     @property
-    def position_axis2(self):
-        with self.__position_axis2_lock:
-            return self.__position_axis2
-
-    @property
     def position_axis1(self):
         with self.__position_axis1_lock:
             return self.__position_axis1
@@ -533,6 +559,11 @@ class MotionControlThreadMonitor:
     def position_axis1(self, value):
         with self.__position_axis1_lock:
             self.__position_axis1 = value
+
+    @property
+    def position_axis2(self):
+        with self.__position_axis2_lock:
+            return self.__position_axis2
 
     @position_axis2.setter
     def position_axis2(self, value):
