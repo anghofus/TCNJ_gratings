@@ -3,7 +3,7 @@ import logging
 
 
 logger = logging.getLogger(__name__)
-# to use centralized logging add the following code to the top of you code
+# add the following code to the top of your main file
 
 # log_level = logging.DEBUG
 # logging.basicConfig(level=log_level)
