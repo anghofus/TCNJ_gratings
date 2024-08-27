@@ -73,7 +73,7 @@ class ShutterController:
             bytesize=serial.EIGHTBITS,
             timeout=0.5
         )
-        logger.info(f"Shutter: initialized\n")
+        logger.info(f"Shutter: initialized")
         logger.debug(f"\tport={self.__ser.port}\n"
                      f"\tbaudrate={self.__ser.baudrate}\n"
                      f"\tparity={self.__ser.parity}\n"
