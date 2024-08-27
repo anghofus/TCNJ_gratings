@@ -75,6 +75,7 @@ class LaserController:
                      f"\t\t\ttimeout={self.__ser.timeout}")
 
         self.send_command(">=0")
+        self.send_command("L=0")
 
     def connection_check(self):
         """
@@ -127,6 +128,7 @@ class LaserController:
         -----
         Always close the connection when finished with the laser to prevent communication issues or resource leaks.
         """
+        self.send_command("L=0")
         self.__ser.flush()
         self.__ser.close()
         del self

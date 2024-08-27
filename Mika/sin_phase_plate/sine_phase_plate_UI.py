@@ -8,7 +8,7 @@ import logging
 import coloredlogs
 
 
-log_level = logging.DEBUG
+log_level = logging.INFO
 logging.basicConfig(level=log_level)
 
 logger = logging.getLogger(__name__)

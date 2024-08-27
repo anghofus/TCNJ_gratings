@@ -102,6 +102,7 @@ class ShutterController:
         Closes the serial connection to the SC10 controller and deletes the instance.
         This function should be called when the communication with the device is no longer needed.
         """
+        self.close_shutter()
         self.__ser.flush()
         self.__ser.close()
         del self

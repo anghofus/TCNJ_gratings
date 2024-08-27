@@ -295,7 +295,6 @@ class InstrumentController:
 
         self.esp.start_up()
         self.shutter.close_shutter()
-        self.laser.send_command("L=1")
 
     def close_connection(self):
         self.laser.close_connection()
@@ -322,6 +321,7 @@ class InstrumentController:
 
         self.esp.move_to_coordinates(coordinates[0], coordinates[1])
         self.esp.wait_for_movement()
+        self.laser.send_command("L=1")
 
     def print_ring(self, image_index: int,
                    grating_width: float,
@@ -344,6 +344,7 @@ class InstrumentController:
         self.esp.wait_for_movement()
         self.laser.send_command("L=1")
         self.laser.send_command(f"P={laser_power}")
+        self.shutter.open_shutter()
         self.esp.move_axis_relative(3, 360, angular_speed)
 
 
@@ -426,6 +427,8 @@ class MotionControlThread(Thread):
 
         logger.info(f"System (MotionControlThread): Printing phase plate")
 
+        self.instruments.esp.move_to_coordinates(4.91, 16.51)
+
         for image_index, image in enumerate(images):
             self.image_display.thread_safe_show_image(image)
             self.instruments.print_ring(image_index,
@@ -434,9 +437,12 @@ class MotionControlThread(Thread):
                                         self.settings.exposure_time,
                                         self.settings.laser_power)
             self.wait()
+            self.instruments.shutter.close_shutter()
             self.monitor.ring_counter += 1
             if self.monitor.kill_flag:
                 break
+
+        self.instruments.laser.send_command("L=0")
 
     def wait(self):
         logger.info(f"System (MotionControlThread): printing ring")
