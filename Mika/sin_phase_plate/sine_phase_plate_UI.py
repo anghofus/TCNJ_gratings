@@ -4,6 +4,24 @@ from sine_phase_plate_backend import *
 import screeninfo
 from PIL import Image, ImageTk
 import queue
+import logging
+import coloredlogs
+
+
+log_level = logging.DEBUG
+logging.basicConfig(level=log_level)
+
+logger = logging.getLogger(__name__)
+
+field_styles = {
+    'asctime': {'color': 'white'},  # Timestamp in white
+    'levelname': {'color': 'blue', 'bold': True},  # Level name in bold blue
+}
+coloredlogs.install(
+    level=log_level,
+    logger=logger,
+    fmt='%(asctime)s - %(levelname)s - %(message)s',
+    field_styles=field_styles)
 
 
 class ImageDisplay(tk.Toplevel):
@@ -85,6 +103,8 @@ class App(tk.Tk):
                                         self.motion_control_monitor)
 
         self.mainloop()
+
+    # TODO: Fix handover of objects
 
     def close_application(self):
         self.motion_control_monitor.kill_flag = True
@@ -363,11 +383,11 @@ class ProcessScreen(ttk.Frame):
 
         self.label_status_value = ttk.Label(self, text="not started", font=("Arial", 20))
         self.label_status_value.grid(row=1, column=1, sticky=tk.W, padx=10)
-        self.label_progress_value = ttk.Label(self, text="---", font=("Arial", 20, 'bold'))
+        self.label_progress_value = ttk.Label(self, text="---", font=("Arial", 20))
         self.label_progress_value.grid(row=2, column=1, sticky=tk.W, padx=10)
-        self.label_angular_velocity_value = ttk.Label(self, text="0", font=("Arial", 20, 'bold'))
+        self.label_angular_velocity_value = ttk.Label(self, text="0", font=("Arial", 20))
         self.label_angular_velocity_value.grid(row=3, column=1, sticky=tk.W, padx=10)
-        self.label_position_value = ttk.Label(self, text="---", font=("Arial", 20, 'bold'))
+        self.label_position_value = ttk.Label(self, text="---", font=("Arial", 20))
         self.label_position_value.grid(row=4, column=1, sticky=tk.W, padx=10)
 
         self.button_start = ttk.Button(self, text="Start", command=self.method_button_start)
@@ -376,6 +396,8 @@ class ProcessScreen(ttk.Frame):
         self.button_cancel.grid(row=5, column=0, columnspan=3, sticky=tk.E, padx=50)
 
         self.grid(row=0, column=0, sticky="nsew")
+
+        # TODO: Fix UI
 
     def method_button_start(self):
         self.command_queue.put(['print'])

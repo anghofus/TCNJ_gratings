@@ -1,5 +1,25 @@
 import serial
 import time
+import logging
+
+
+logger = logging.getLogger(__name__)
+# to use centralized logging add the following code to the top of you code
+
+# log_level = logging.DEBUG
+# logging.basicConfig(level=log_level)
+#
+# logger = logging.getLogger(__name__)
+#
+# field_styles = {
+#     'asctime': {'color': 'white'},
+#     'levelname': {'color': 'blue', 'bold': True},
+# }
+# coloredlogs.install(
+#     level=log_level,
+#     logger=logger,
+#     fmt='%(asctime)s - %(levelname)s - %(message)s',
+#     field_styles=field_styles)
 
 
 class SerialError(Exception):
@@ -73,14 +93,14 @@ class ESPController:
             timeout=0.5
         )
 
-        print(f"ESP: Initializing\n"
-              f"\tport={self.__ser.port}\n"
-              f"\tbaudrate={self.__ser.baudrate}\n"
-              f"\tparity={self.__ser.parity}\n"
-              f"\tstopbits={self.__ser.stopbits}\n"
-              f"\tbytesize={self.__ser.bytesize}\n"
-              f"\trtscts={self.__ser.rtscts}\n"
-              f"\ttimeout={self.__ser.timeout}")
+        logger.info(f"ESP: initialized")
+        logger.debug(f"\tport={self.__ser.port}\n"
+                     f"\tbaudrate={self.__ser.baudrate}\n"
+                     f"\tparity={self.__ser.parity}\n"
+                     f"\tstopbits={self.__ser.stopbits}\n"
+                     f"\tbytesize={self.__ser.bytesize}\n"
+                     f"\trtscts={self.__ser.rtscts}\n"
+                     f"\ttimeout={self.__ser.timeout}")
 
     def connection_check(self):
         """
@@ -105,10 +125,10 @@ class ESPController:
         """
         response = self.send_command_no_error_check("TE", None, 2)
         if response == '':
-            print("ESP: Connection check failed")
+            logger.critical("ESP: Connection check failed")
             return False
         else:
-            print("ESP: Connection check successful")
+            logger.info("ESP: Connection check successful")
             return True
 
     def start_up(self):
@@ -137,9 +157,9 @@ class ESPController:
         """
         for i in range(3):
             self.send_command("MO", i + 1)
-            print(f"ESP: Axis {i+1} power on")
+            logger.info(f"ESP: Axis {i+1} power on")
             self.send_command("OR", i + 1)
-            print(f"ESP: Axis {i+1} homing")
+            logger.info(f"ESP: Axis {i+1} homing")
         self.wait_for_movement()
 
     def close_connection(self):
@@ -161,9 +181,9 @@ class ESPController:
         self.__ser.flush()
         self.__ser.close()
         del self
-        print("ESP: Connection closed")
+        logger.info("ESP: Connection closed")
 
-    def send_command_no_error_check(self, command: str, xx_parameter=None, nn_parameter=None, debug=False):
+    def send_command_no_error_check(self, command: str, xx_parameter=None, nn_parameter=None):
         """
         Sends a command to the ESP302 controller without performing error checks on the response.
 
@@ -214,12 +234,10 @@ class ESPController:
         nn_str = str(nn_parameter) if nn_parameter is not None else ''
 
         full_command = f"{xx_str}{command}{nn_str}\r".encode()
-        if debug:
-            print(full_command)
         self.__ser.write(full_command)
 
         response = self.__ser.read_until(b'\r\r\n').decode()
-        print(f"ESP: Command sent: {repr(full_command)}, response: {repr(response)}")
+        logger.debug(f"ESP: Command sent: {repr(full_command)}, response: {repr(response)}")
         return response
 
     def send_command(self, command: str, xx_parameter=None, nn_parameter=None, debug=False):
@@ -273,14 +291,14 @@ class ESPController:
         error_code = self.send_command_no_error_check("TE", None, 1)
 
         if error_code == '':
-            print("ESP: Error check failed: Connection lost")
+            logger.critical("ESP: Error check failed: Connection lost")
             raise SerialError("Connection lost!")
         elif int(error_code) == 0:
-            print("ESP: Error check: OK")
+            logger.info("ESP: Error check: OK")
             return response
         else:
             error_buffer = self.send_command_no_error_check("TB")
-            print(f"ESP: Error check failed: {error_buffer}")
+            logger.error(f"ESP: Error check failed: {error_buffer}")
             raise SerialError(f"{error_buffer}")
 
     def error_check(self):
@@ -325,17 +343,17 @@ class ESPController:
         error_count = self.send_command_no_error_check("TE", None, 2)
 
         if error_count == '':
-            print("ESP: Error check failed: Connection lost")
+            logger.critical("ESP: Error check failed: Connection lost")
             raise SerialError("Connection lost!")
         elif int(error_count) == 0:
-            print("ESP: Error check: OK")
+            logger.info("ESP: Error check: OK")
             return True
         else:
             errors = []
             for i in range(int(error_count)):
                 error = self.send_command_no_error_check("TB")
                 errors.append(error)
-            print(f"ESP: Error check failed: {errors}")
+            logger.error(f"ESP: Error check failed: {errors}")
             raise SerialError(errors)
 
     def clear_error_buffer(self):
@@ -369,7 +387,7 @@ class ESPController:
         while True:
             error_message = self.send_command_no_error_check("TB")
             if "NO ERROR DETECTED" in error_message.strip():
-                print("ESP: Error buffer cleared")
+                logger.debug("ESP: Error buffer cleared")
                 break
 
     def get_motion_status(self):
@@ -403,18 +421,18 @@ class ESPController:
         ascii_response = self.send_command("TS")[:-3].encode()
         binary = bin(int.from_bytes(ascii_response, "big"))[2:].zfill(8)
 
-        print("ESP: get motion state")
+        logger.info("ESP: get motion state")
 
         motion_state = []
         for i in range(3):
             if binary[-(i + 1)] == "1":
                 motion_state.append(1)
-                print(f"\tAxis {i + 1} in motion")
+                logger.info(f"\tAxis {i + 1} in motion")
             elif binary[-(i + 1)] == "0":
                 motion_state.append(0)
-                print(f"\tAxis {i + 1} not in motion")
+                logger.info(f"\tAxis {i + 1} not in motion")
             else:
-                print(f"\fAxis {i + 1} invalid reading")
+                logger.info(f"\fAxis {i + 1} invalid reading")
                 raise SerialError("Invalid reading for motion state")
         return motion_state
 
@@ -446,7 +464,7 @@ class ESPController:
         position = position_str.strip().split(",")
         position_float = [float(item) for item in position]
 
-        print(f"ESP: get axis position\n\tAxis 1: {position_float[0]}\n\tAxis 2: {position_float[1]}\n\tAxis 3: {position_float[2]}")
+        logger.info(f"ESP: get axis position\n\tAxis 1: {position_float[0]}\n\tAxis 2: {position_float[1]}\n\tAxis 3: {position_float[2]}")
 
         return position_float
 
@@ -479,7 +497,7 @@ class ESPController:
 
         speed_list = [float(speed_axis1_str), float(speed_axis2_str), float(speed_axis3_str)]
 
-        print(f"ESP: get axis speed\n\tAxis 1: {speed_list[0]}\n\tAxis 2: {speed_list[1]}\n\tAxis 3: {speed_list[2]}")
+        logger.info(f"ESP: get axis speed\n\tAxis 1: {speed_list[0]}\n\tAxis 2: {speed_list[1]}\n\tAxis 3: {speed_list[2]}")
 
         return speed_list
 
@@ -523,7 +541,7 @@ class ESPController:
         max_speed = self.send_command("VU", axis, '?')
         assert speed <= int(max_speed), f"speed can't be higher than {max_speed}"
 
-        print(f"ESP: Move (abs) Axis {axis} to {position} at speed {speed}")
+        logger.info(f"ESP: Move (abs) Axis {axis} to {position} at speed {speed}")
 
         current_speed = self.send_command_no_error_check("VA", axis, "?").strip()
         self.send_command_no_error_check("EP", 1)
@@ -535,7 +553,7 @@ class ESPController:
         self.send_command_no_error_check("EX", 1)
         self.send_command_no_error_check("XX", 1)
         if self.error_check():
-            print("ESP: Movement successful")
+            logger.info("ESP: Movement successful")
 
     def move_axis_relative(self, axis, units, speed=1):
 
@@ -590,7 +608,7 @@ class ESPController:
         max_speed = self.send_command("VU", axis, '?')
         assert speed <= int(max_speed), f"speed can't be higher than {max_speed}"
 
-        print(f"ESP: Move (rel) Axis {axis} {units:+} units at speed {speed}")
+        logger.info(f"ESP: Move (rel) Axis {axis} {units:+} units at speed {speed}")
 
         current_speed = self.send_command_no_error_check("VA", axis, "?")
         self.send_command_no_error_check("EP", 1)
@@ -602,7 +620,7 @@ class ESPController:
         self.send_command_no_error_check("EX", 1)
         self.send_command_no_error_check("XX", 1)
         if self.error_check():
-            print("ESP: Movement successful")
+            logger.info("ESP: Movement successful")
 
     def move_to_coordinates(self, x_coordinate: float, y_coordinate: float, phi_coordinate=None, speed=1):
         """
@@ -648,9 +666,9 @@ class ESPController:
             assert 0 <= phi_coordinate <= 360, "phi_coordinate must be between 0 and 360"
 
         if phi_coordinate is None:
-            print(f"ESP: Move to X:{x_coordinate}, Y:{y_coordinate}")
+            logger.info(f"ESP: Move to X:{x_coordinate}, Y:{y_coordinate}")
         if phi_coordinate is not None:
-            print(f"ESP: Move to X:{x_coordinate}, Y:{y_coordinate}, PHI: {phi_coordinate}")
+            logger.info(f"ESP: Move to X:{x_coordinate}, Y:{y_coordinate}, PHI: {phi_coordinate}")
 
         self.move_axis_absolut(1, x_coordinate, speed)
         self.move_axis_absolut(2, y_coordinate, speed)
@@ -679,6 +697,7 @@ class ESPController:
         -----
         This method is useful for ensuring that subsequent commands are not issued while the axes are still in motion.
         """
+        logger.info("ESP: wait for movement")
         while any(self.get_motion_status()):
             time.sleep(0.1)
 
@@ -713,13 +732,13 @@ class ESPController:
         This method should be used in situations where immediate cessation of motion is required,
         such as to prevent collisions or when an unexpected situation occurs.
         """
-        print("ESP: Emergency stop initiated!")
+        logger.warning("ESP: Emergency stop initiated!")
 
         self.send_command_no_error_check("AB")
 
         while any(self.get_motion_status()):
             pass
-        print("ESP: Emergency stop successful")
+        logger.warning("ESP: Emergency stop successful")
         return True
 
     def stop_movement(self):
@@ -749,5 +768,5 @@ class ESPController:
         while any(self.get_motion_status()):
             pass
 
-        print("ESP: Movement stopped")
+        logger.info("ESP: Movement stopped")
         return True

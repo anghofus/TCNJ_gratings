@@ -1,4 +1,24 @@
 import serial
+import logging
+
+
+logger = logging.getLogger(__name__)
+# to use centralized logging add the following code to the top of you code
+
+# log_level = logging.DEBUG
+# logging.basicConfig(level=log_level)
+#
+# logger = logging.getLogger(__name__)
+#
+# field_styles = {
+#     'asctime': {'color': 'white'},
+#     'levelname': {'color': 'blue', 'bold': True},
+# }
+# coloredlogs.install(
+#     level=log_level,
+#     logger=logger,
+#     fmt='%(asctime)s - %(levelname)s - %(message)s',
+#     field_styles=field_styles)
 
 
 class SerialError(Exception):
@@ -46,13 +66,13 @@ class LaserController:
             timeout=0.5
         )
 
-        print(f"Laser: Initializing\n"
-              f"\tport={self.__ser.port}\n"
-              f"\tbaudrate={self.__ser.baudrate}\n"
-              f"\tparity={self.__ser.parity}\n"
-              f"\tstopbits={self.__ser.stopbits}\n"
-              f"\tbytesize={self.__ser.bytesize}\n"
-              f"\ttimeout={self.__ser.timeout}")
+        logger.info(f"Laser: Initializing")
+        logger.debug(f"\tport={self.__ser.port}\n"
+                     f"\tbaudrate={self.__ser.baudrate}\n"
+                     f"\tparity={self.__ser.parity}\n"
+                     f"\tstopbits={self.__ser.stopbits}\n"
+                     f"\tbytesize={self.__ser.bytesize}\n"
+                     f"\ttimeout={self.__ser.timeout}")
 
         self.send_command(">=0")
 
@@ -80,10 +100,10 @@ class LaserController:
         """
         response = self.send_command("")
         if response == '\r\n':
-            print("Laser: Connection check successful")
+            logger.info("Laser: Connection check successful")
             return True
         if response == "":
-            print("Laser: Connection check failed")
+            logger.critical("Laser: Connection check failed")
             return False
 
     def close_connection(self):
@@ -110,7 +130,7 @@ class LaserController:
         self.__ser.flush()
         self.__ser.close()
         del self
-        print("Laser: Connection closed")
+        logger.info("Laser: Connection closed")
 
     def send_command(self, command):
         """
@@ -151,11 +171,14 @@ class LaserController:
 
         response = self.__ser.read_until(b'\r\n').decode()
         if "\x00" in response:
-            print(f"Laser: Command {repr({full_command})} is unknown")
+            logger.error(f"Laser: Command {repr({full_command})} is unknown")
             raise SerialError("Command unknown")
         elif response == "":
-            print("Laser: Connection lost")
+            logger.critical("Laser: Connection lost")
             raise SerialError("Connection lost")
         else:
-            print(f"Laser: Command sent: {repr(full_command)}, response: {repr(response)}")
+            logger.info("Laser: Command sent")
+            logger.debug(f"Laser: Command sent: {repr(full_command)}, response: {repr(response)}")
             return response
+
+# TODO: implement logging
