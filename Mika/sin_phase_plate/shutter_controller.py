@@ -1,4 +1,24 @@
 import serial
+import logging
+
+
+logger = logging.getLogger(__name__)
+# to use centralized logging add the following code to the top of you code
+
+# log_level = logging.DEBUG
+# logging.basicConfig(level=log_level)
+#
+# logger = logging.getLogger(__name__)
+#
+# field_styles = {
+#     'asctime': {'color': 'white'},
+#     'levelname': {'color': 'blue', 'bold': True},
+# }
+# coloredlogs.install(
+#     level=log_level,
+#     logger=logger,
+#     fmt='%(asctime)s - %(levelname)s - %(message)s',
+#     field_styles=field_styles)
 
 
 class ShutterController:
@@ -53,13 +73,13 @@ class ShutterController:
             bytesize=serial.EIGHTBITS,
             timeout=0.5
         )
-        print(f"Shutter: Initializing\n"
-              f"\tport={self.__ser.port}\n"
-              f"\tbaudrate={self.__ser.baudrate}\n"
-              f"\tparity={self.__ser.parity}\n"
-              f"\tstopbits={self.__ser.stopbits}\n"
-              f"\tbytesize={self.__ser.bytesize}\n"
-              f"\ttimeout={self.__ser.timeout}")
+        logger.info(f"Shutter: initialized\n")
+        logger.debug(f"\tport={self.__ser.port}\n"
+                     f"\tbaudrate={self.__ser.baudrate}\n"
+                     f"\tparity={self.__ser.parity}\n"
+                     f"\tstopbits={self.__ser.stopbits}\n"
+                     f"\tbytesize={self.__ser.bytesize}\n"
+                     f"\ttimeout={self.__ser.timeout}")
 
     def connection_check(self):
         """
@@ -71,10 +91,10 @@ class ShutterController:
         """
         response = self.send_command("")
         if "Command error CMD_NOT_DEFINED" in response:
-            print("Shutter: Connection check successful")
+            logger.info("Shutter: Connection check successful")
             return True
         if response == "":
-            print("Shutter: Connection check failed")
+            logger.critical("Shutter: Connection check failed")
             return False
 
     def close_connection(self):
@@ -85,7 +105,7 @@ class ShutterController:
         self.__ser.flush()
         self.__ser.close()
         del self
-        print("Shutter: Connection closed")
+        logger.info("Shutter: Connection closed")
 
     def send_command(self, command: str):
         """
@@ -102,7 +122,7 @@ class ShutterController:
 
         response = repr(self.__ser.read_until(b'>').decode())
 
-        print(f"Shutter: Command sent: {repr(full_command)}, response: {repr(response)}")
+        logger.debug(f"Shutter: Command sent: {repr(full_command)}, response: {repr(response)}")
 
         return response
 
@@ -116,10 +136,10 @@ class ShutterController:
         response = self.send_command("ens?")
 
         if "0" in response:
-            print("Shutter: State: closed")
+            logger.info("Shutter: State: closed")
             return False
         if "1" in response:
-            print("Shutter: State: open")
+            logger.info("Shutter: State: open")
             return True
 
     def open_shutter(self):
@@ -129,14 +149,14 @@ class ShutterController:
         Returns:
             bool: True if the shutter was successfully opened, False if the shutter was already open.
         """
-        print("Shutter: Open shutter")
+        logger.info("Shutter: Open shutter")
         state = self.get_shutter_state()
         if not state:
             self.send_command("ens")
-            print("Shutter: Opened")
+            logger.info("Shutter: Opened")
             return True
         else:
-            print("Shutter: already open")
+            logger.info("Shutter: already open")
             return False
 
     def close_shutter(self):
@@ -146,12 +166,12 @@ class ShutterController:
         Returns:
             bool: True if the shutter was successfully closed, False if the shutter was already closed.
         """
-        print("Shutter: Close shutter")
+        logger.info("Shutter: Close shutter")
         state = self.get_shutter_state()
         if state:
             self.send_command("ens")
-            print("Shutter: closed")
+            logger.info("Shutter: closed")
             return True
         else:
-            print("Shutter: already closed")
+            logger.info("Shutter: already closed")
             return False
