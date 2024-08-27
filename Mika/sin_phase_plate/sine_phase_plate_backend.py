@@ -585,5 +585,3 @@ class MotionControlThreadMonitor:
     def position_axis3(self, value):
         with self.__position_axis3_lock:
             self.__position_axis3 = value
-
-# TODO: implement logging

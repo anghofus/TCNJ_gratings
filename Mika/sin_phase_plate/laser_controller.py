@@ -180,5 +180,3 @@ class LaserController:
             logger.info("Laser: Command sent")
             logger.debug(f"Laser: Command sent: {repr(full_command)}, response: {repr(response)}")
             return response
-
-# TODO: implement logging
