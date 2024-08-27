@@ -397,8 +397,6 @@ class ProcessScreen(ttk.Frame):
 
         self.grid(row=0, column=0, sticky="nsew")
 
-        # TODO: Fix UI
-
     def method_button_start(self):
         self.command_queue.put(['print'])
         self.update_label()
