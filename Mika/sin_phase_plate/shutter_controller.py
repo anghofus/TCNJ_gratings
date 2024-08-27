@@ -74,12 +74,12 @@ class ShutterController:
             timeout=0.5
         )
         logger.info(f"Shutter: initialized")
-        logger.debug(f"\tport={self.__ser.port}\n"
-                     f"\tbaudrate={self.__ser.baudrate}\n"
-                     f"\tparity={self.__ser.parity}\n"
-                     f"\tstopbits={self.__ser.stopbits}\n"
-                     f"\tbytesize={self.__ser.bytesize}\n"
-                     f"\ttimeout={self.__ser.timeout}")
+        logger.debug(f"port={self.__ser.port}\n"
+                     f"\t\t\tbaudrate={self.__ser.baudrate}\n"
+                     f"\t\t\tparity={self.__ser.parity}\n"
+                     f"\t\t\tstopbits={self.__ser.stopbits}\n"
+                     f"\t\t\tbytesize={self.__ser.bytesize}\n"
+                     f"\t\t\ttimeout={self.__ser.timeout}")
 
     def connection_check(self):
         """

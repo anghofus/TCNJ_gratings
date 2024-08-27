@@ -66,13 +66,13 @@ class LaserController:
             timeout=0.5
         )
 
-        logger.info(f"Laser: Initializing")
-        logger.debug(f"\tport={self.__ser.port}\n"
-                     f"\tbaudrate={self.__ser.baudrate}\n"
-                     f"\tparity={self.__ser.parity}\n"
-                     f"\tstopbits={self.__ser.stopbits}\n"
-                     f"\tbytesize={self.__ser.bytesize}\n"
-                     f"\ttimeout={self.__ser.timeout}")
+        logger.info(f"Laser: initialized")
+        logger.debug(f"port={self.__ser.port}\n"
+                     f"\t\t\tbaudrate={self.__ser.baudrate}\n"
+                     f"\t\t\tparity={self.__ser.parity}\n"
+                     f"\t\t\tstopbits={self.__ser.stopbits}\n"
+                     f"\t\t\tbytesize={self.__ser.bytesize}\n"
+                     f"\t\t\ttimeout={self.__ser.timeout}")
 
         self.send_command(">=0")
 
@@ -177,6 +177,6 @@ class LaserController:
             logger.critical("Laser: Connection lost")
             raise SerialError("Connection lost")
         else:
-            logger.info("Laser: Command sent")
+            logger.info(f"Laser: Command sent: {repr(full_command)}")
             logger.debug(f"Laser: Command sent: {repr(full_command)}, response: {repr(response)}")
             return response

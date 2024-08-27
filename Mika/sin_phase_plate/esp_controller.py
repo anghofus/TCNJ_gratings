@@ -94,13 +94,13 @@ class ESPController:
         )
 
         logger.info(f"ESP: initialized")
-        logger.debug(f"\tport={self.__ser.port}\n"
-                     f"\tbaudrate={self.__ser.baudrate}\n"
-                     f"\tparity={self.__ser.parity}\n"
-                     f"\tstopbits={self.__ser.stopbits}\n"
-                     f"\tbytesize={self.__ser.bytesize}\n"
-                     f"\trtscts={self.__ser.rtscts}\n"
-                     f"\ttimeout={self.__ser.timeout}")
+        logger.debug(f"port={self.__ser.port}\n"
+                     f"\t\t\tbaudrate={self.__ser.baudrate}\n"
+                     f"\t\t\tparity={self.__ser.parity}\n"
+                     f"\t\t\tstopbits={self.__ser.stopbits}\n"
+                     f"\t\t\tbytesize={self.__ser.bytesize}\n"
+                     f"\t\t\trtscts={self.__ser.rtscts}\n"
+                     f"\t\t\ttimeout={self.__ser.timeout}")
 
     def connection_check(self):
         """
@@ -286,7 +286,7 @@ class ESPController:
         """
         self.clear_error_buffer()
 
-        response = self.send_command_no_error_check(command, xx_parameter, nn_parameter, debug)
+        response = self.send_command_no_error_check(command, xx_parameter, nn_parameter)
 
         error_code = self.send_command_no_error_check("TE", None, 1)
 
@@ -294,7 +294,7 @@ class ESPController:
             logger.critical("ESP: Error check failed: Connection lost")
             raise SerialError("Connection lost!")
         elif int(error_code) == 0:
-            logger.info("ESP: Error check: OK")
+            logger.debug("ESP: Error check: OK")
             return response
         else:
             error_buffer = self.send_command_no_error_check("TB")
@@ -346,7 +346,7 @@ class ESPController:
             logger.critical("ESP: Error check failed: Connection lost")
             raise SerialError("Connection lost!")
         elif int(error_count) == 0:
-            logger.info("ESP: Error check: OK")
+            logger.debug("ESP: Error check: OK")
             return True
         else:
             errors = []

@@ -32,16 +32,16 @@ class Settings:
         self.__port_shutter = "/dev/ttyUSB2"
 
         logger.info("System (Settings): Settings initialized")
-        logger.debug(f"\texposure time: {self.__exposure_time}\n"
-                     f"\tgrating width: {self.__grating_width}\n"
-                     f"\tgrating height: {self.__grating_height}\n"
-                     f"\twavelength: {self.__wavelength}\n"
-                     f"\tlaser power: {self.__laser_power}\n"
-                     f"\ty_min: {self.__y_min}\n"
-                     f"\ty_peak_to_peak: {self.__y_peak_to_peak}\n"
-                     f"\tport_laser: {self.__port_laser}\n"
-                     f"\tport_motion_controller: {self.__port_motion_controller}\n"
-                     f"\tport_shutter: {self.__port_shutter}")
+        logger.debug(f"exposure time: {self.__exposure_time}\n"
+                     f"\t\t\tgrating width: {self.__grating_width}\n"
+                     f"\t\t\tgrating height: {self.__grating_height}\n"
+                     f"\t\t\twavelength: {self.__wavelength}\n"
+                     f"\t\t\tlaser power: {self.__laser_power}\n"
+                     f"\t\t\ty_min: {self.__y_min}\n"
+                     f"\t\t\ty_peak_to_peak: {self.__y_peak_to_peak}\n"
+                     f"\t\t\tport_laser: {self.__port_laser}\n"
+                     f"\t\t\tport_motion_controller: {self.__port_motion_controller}\n"
+                     f"\t\t\tport_shutter: {self.__port_shutter}")
 
     @property
     def radius(self):
@@ -443,7 +443,7 @@ class MotionControlThread(Thread):
         while any(self.instruments.esp.get_motion_status()):
             start_time = time.time()
             if self.monitor.kill_flag:
-                logger.warning("System (MotionControlThread): kill flag detected, stop movement")
+                logger.info("System (MotionControlThread): kill flag detected, stop movement")
                 self.instruments.esp.stop_movement()
             else:
                 position = self.instruments.esp.get_axis_position()
@@ -457,7 +457,8 @@ class MotionControlThread(Thread):
 
                 while time.time() < start_time + 0.5:
                     pass
-                logger.info("System (MotionControlThread): ring done")
+        if not self.monitor.kill_flag:
+            logger.info("System (MotionControlThread): ring done")
 
 
 class MotionControlThreadMonitor:
