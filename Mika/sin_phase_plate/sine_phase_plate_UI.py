@@ -91,7 +91,7 @@ class App(tk.Tk):
         self.grid_rowconfigure(0, weight=1)
 
         self.title("sine phase plate app")
-        self.geometry("640x480")
+        self.geometry("800x600")
         self.minsize(640, 480)
 
         self.protocol("WM_DELETE_WINDOW", self.close_application)
@@ -141,8 +141,8 @@ class StartScreen(ttk.Frame):
 
         ttk.Label(self, text="lens parameters", font=("Arial", 25)).grid(row=0, column=0, columnspan=2, padx=10,
                                                                          pady=10)
-        ttk.Label(self, text="radius in mm", font=("Arial", 20)).grid(row=1, column=0, sticky=tk.W, padx=10, pady=10)
-        ttk.Label(self, text="focal length in mm", font=("Arial", 20)).grid(row=2, column=0, sticky=tk.W, padx=10,
+        ttk.Label(self, text="radius in mm", font=("Arial", 20)).grid(row=1, column=0, sticky=tk.E, padx=10, pady=10)
+        ttk.Label(self, text="focal length in mm", font=("Arial", 20)).grid(row=2, column=0, sticky=tk.E, padx=10,
                                                                             pady=10)
 
         self.entry_radius = ttk.Entry(self)
@@ -414,9 +414,9 @@ class ProcessScreen(ttk.Frame):
             self.label_status_value.configure(text="not running")
         self.label_progress_value.configure(text=f"{self.motion_control_monitor.ring_counter} / {self.motion_control_monitor.rings_total}")
         self.label_angular_velocity_value.configure(text=f"{self.motion_control_monitor.speed_axis3} deg/s")
-        self.label_position_value.configure(text=f"X: {self.motion_control_monitor.position_axis1} mm"
-                                                 f"Y: {self.motion_control_monitor.position_axis2} mm"
-                                                 f"PHI: {self.motion_control_monitor.position_axis3} deg")
+        self.label_position_value.configure(text=f"X: {self.motion_control_monitor.position_axis1} mm "
+                                                 f"Y: {self.motion_control_monitor.position_axis2} mm "
+                                                 f"φ: {self.motion_control_monitor.position_axis3} deg")
         self.after(500, self.update_label)
 
     def error_check(self):
