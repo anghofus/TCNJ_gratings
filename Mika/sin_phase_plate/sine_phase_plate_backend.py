@@ -262,8 +262,8 @@ class SinePhasePlateGeneration:
     def __generate_slm_images(self):
         logger.info("System (SinePhasePlateGeneration): Generating SLM images")
         images = []
-        image_array = np.zeros((self.__slm_px_height, self.__slm_px_width), dtype=np.uint8)
         for i in range(self.__slm_count):
+            image_array = np.zeros((self.__slm_px_height, self.__slm_px_width), dtype=np.uint8)
             start = self.__slm_px_width * i
             stop = start + self.__slm_px_width
             for j in range(self.__slm_px_height):
