@@ -40,7 +40,7 @@ class ImageDisplay(tk.Toplevel):
         second_monitor = monitors[monitor]
 
         self.geometry(f"{second_monitor.width}x{second_monitor.height}+{second_monitor.x}+{second_monitor.y}")
-        #self.attributes("-fullscreen", True)
+        # self.attributes("-fullscreen", True)
         self.configure(background='black')
 
         # Initialize the label to None
@@ -96,15 +96,9 @@ class App(tk.Tk):
 
         self.protocol("WM_DELETE_WINDOW", self.close_application)
 
-        self.start_screen = StartScreen(self,
-                                        self.settings,
-                                        self.command_queue,
-                                        self.error_queue,
-                                        self.motion_control_monitor)
+        self.start_screen = StartScreen(self)
 
         self.mainloop()
-
-    # TODO: Fix handover of objects
 
     def close_application(self):
         self.motion_control_monitor.kill_flag = True
@@ -120,15 +114,10 @@ class App(tk.Tk):
 
 
 class StartScreen(ttk.Frame):
-    def __init__(self, master, settings, command_queue, error_queue, motion_control_monitor):
+    def __init__(self, master):
         assert isinstance(master, App)
-        assert isinstance(settings, Settings)
 
-        self.master = master
-        self.settings = settings
-        self.command_queue = command_queue
-        self.error_queue = error_queue
-        self.motion_control_monitor = motion_control_monitor
+        self.master: App = master
 
         super().__init__(master)
 
@@ -146,12 +135,12 @@ class StartScreen(ttk.Frame):
                                                                             pady=10)
 
         self.entry_radius = ttk.Entry(self)
-        if self.settings.radius is not None:
-            self.entry_radius.insert(0, self.settings.radius)
+        if self.master.settings.radius is not None:
+            self.entry_radius.insert(0, self.master.settings.radius)
         self.entry_radius.grid(row=1, column=1, sticky=tk.W, padx=10)
         self.entry_focal_length = ttk.Entry(self)
-        if self.settings.focal_length is not None:
-            self.entry_focal_length.insert(0, self.settings.focal_length)
+        if self.master.settings.focal_length is not None:
+            self.entry_focal_length.insert(0, self.master.settings.focal_length)
         self.entry_focal_length.grid(row=2, column=1, sticky=tk.W, padx=10)
 
         ttk.Button(self, text="apply", command=self.button_apply).grid(row=3, column=0)
@@ -161,39 +150,35 @@ class StartScreen(ttk.Frame):
 
     def button_apply(self):
         try:
-            self.settings.radius = float(self.entry_radius.get())
-            self.settings.focal_length = float(self.entry_focal_length.get())
+            self.master.settings.radius = float(self.entry_radius.get())
+            self.master.settings.focal_length = float(self.entry_focal_length.get())
         except Exception:
             return
 
-        motion_control_thread = MotionControlThread(self.settings,
-                                                    self.command_queue,
-                                                    self.error_queue,
-                                                    self.motion_control_monitor,
+        motion_control_thread = MotionControlThread(self.master.settings,
+                                                    self.master.command_queue,
+                                                    self.master.error_queue,
+                                                    self.master.motion_control_monitor,
                                                     self.master.image_display)
         motion_control_thread.start()
 
         self.grid_forget()
-        FocusingScreen(self.master, self.settings, self.command_queue, self.error_queue, self.motion_control_monitor)
+        FocusingScreen(self.master)
 
     def button_settings(self):
         self.grid_forget()
-        SettingsScreen(self.master, self.settings, self.command_queue, self.error_queue, self.motion_control_monitor)
+        SettingsScreen(self.master)
 
 
 class SettingsScreen(ttk.Frame):
-    def __init__(self, master, settings, command_queue, error_queue, motion_control_monitor):
+    def __init__(self, master):
         assert isinstance(master, App)
-        assert isinstance(settings, Settings)
 
-        self.master = master
-        self.settings = settings
-        self.command_queue = command_queue
-        self.error_queue = error_queue
-        self.motion_control_monitor = motion_control_monitor
+        self.master: App = master
+
         super().__init__(master)
 
-        self.settings.read_from_json()
+        self.master.settings.read_from_json()
 
         self.grid_rowconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
@@ -223,34 +208,34 @@ class SettingsScreen(ttk.Frame):
         ttk.Label(self, text="port shutter", font=("Arial", 20)).grid(row=10, column=0, padx=10, sticky=tk.W)
 
         self.entry_exposure_time = ttk.Entry(self)
-        self.entry_exposure_time.insert(0, self.settings.exposure_time)
+        self.entry_exposure_time.insert(0, self.master.settings.exposure_time)
         self.entry_exposure_time.grid(row=1, column=1, padx=10)
         self.entry_grating_width = ttk.Entry(self)
-        self.entry_grating_width.insert(0, self.settings.grating_width)
+        self.entry_grating_width.insert(0, self.master.settings.grating_width)
         self.entry_grating_width.grid(row=2, column=1, padx=10)
         self.entry_grating_height = ttk.Entry(self)
-        self.entry_grating_height.insert(0, self.settings.grating_height)
+        self.entry_grating_height.insert(0, self.master.settings.grating_height)
         self.entry_grating_height.grid(row=3, column=1, padx=10)
         self.entry_wavelength = ttk.Entry(self)
-        self.entry_wavelength.insert(0, self.settings.wavelength)
+        self.entry_wavelength.insert(0, self.master.settings.wavelength)
         self.entry_wavelength.grid(row=4, column=1, padx=10)
         self.entry_laser_power = ttk.Entry(self)
-        self.entry_laser_power.insert(0, self.settings.laser_power)
+        self.entry_laser_power.insert(0, self.master.settings.laser_power)
         self.entry_laser_power.grid(row=5, column=1, padx=10)
         self.entry_y_min = ttk.Entry(self)
-        self.entry_y_min.insert(0, self.settings.y_min)
+        self.entry_y_min.insert(0, self.master.settings.y_min)
         self.entry_y_min.grid(row=6, column=1, padx=10)
         self.entry_y_peak_to_peak = ttk.Entry(self)
-        self.entry_y_peak_to_peak.insert(0, self.settings.y_peak_to_peak)
+        self.entry_y_peak_to_peak.insert(0, self.master.settings.y_peak_to_peak)
         self.entry_y_peak_to_peak.grid(row=7, column=1, padx=10)
         self.entry_port_laser = ttk.Entry(self)
-        self.entry_port_laser.insert(0, self.settings.port_laser)
+        self.entry_port_laser.insert(0, self.master.settings.port_laser)
         self.entry_port_laser.grid(row=8, column=1, padx=10)
         self.entry_port_motion_controller = ttk.Entry(self)
-        self.entry_port_motion_controller.insert(0, self.settings.port_motion_controller)
+        self.entry_port_motion_controller.insert(0, self.master.settings.port_motion_controller)
         self.entry_port_motion_controller.grid(row=9, column=1, padx=10)
         self.entry_port_shutter = ttk.Entry(self)
-        self.entry_port_shutter.insert(0, self.settings.port_shutter)
+        self.entry_port_shutter.insert(0, self.master.settings.port_shutter)
         self.entry_port_shutter.grid(row=10, column=1, padx=10)
 
         ttk.Button(self, text="apply", command=self.button_apply).grid(row=11, column=0)
@@ -259,37 +244,32 @@ class SettingsScreen(ttk.Frame):
         self.grid(row=0, column=0, sticky="nsew")
 
     def button_apply(self):
-        self.settings.exposure_time = float(self.entry_exposure_time.get())
-        self.settings.grating_width = float(self.entry_grating_width.get())
-        self.settings.grating_height = float(self.entry_grating_height.get())
-        self.settings.wavelength = float(self.entry_wavelength.get())
-        self.settings.laser_power = float(self.entry_laser_power.get())
-        self.settings.y_min = int(self.entry_y_min.get())
-        self.settings.y_peak_to_peak = int(self.entry_y_peak_to_peak.get())
-        self.settings.port_laser = self.entry_port_laser.get()
-        self.settings.port_motion_controller = self.entry_port_motion_controller.get()
-        self.settings.port_shutter = self.entry_port_shutter.get()
+        self.master.settings.exposure_time = float(self.entry_exposure_time.get())
+        self.master.settings.grating_width = float(self.entry_grating_width.get())
+        self.master.settings.grating_height = float(self.entry_grating_height.get())
+        self.master.settings.wavelength = float(self.entry_wavelength.get())
+        self.master.settings.laser_power = float(self.entry_laser_power.get())
+        self.master.settings.y_min = int(self.entry_y_min.get())
+        self.master.settings.y_peak_to_peak = int(self.entry_y_peak_to_peak.get())
+        self.master.settings.port_laser = self.entry_port_laser.get()
+        self.master.settings.port_motion_controller = self.entry_port_motion_controller.get()
+        self.master.settings.port_shutter = self.entry_port_shutter.get()
 
-        self.settings.write_to_json()
+        self.master.settings.write_to_json()
 
         self.grid_forget()
-        StartScreen(self.master, self.settings, self.command_queue, self.error_queue, self.motion_control_monitor)
+        StartScreen(self.master)
 
     def button_cancel(self):
         self.grid_forget()
-        StartScreen(self.master, self.settings, self.command_queue, self.error_queue, self.motion_control_monitor)
+        StartScreen(self.master)
 
 
 class FocusingScreen(ttk.Frame):
-    def __init__(self, master, settings, command_queue, error_queue, motion_control_monitor):
+    def __init__(self, master):
         assert isinstance(master, App)
-        assert isinstance(settings, Settings)
 
-        self.master = master
-        self.settings = settings
-        self.command_queue = command_queue
-        self.error_queue = error_queue
-        self.motion_control_monitor = motion_control_monitor
+        self.master: App = master
 
         super().__init__(master)
 
@@ -327,36 +307,27 @@ class FocusingScreen(ttk.Frame):
         self.grid(row=0, column=0, sticky="nsew")
 
     def button_finish(self):
-        self.command_queue.put(['close_shutter'])
-        self.command_queue.put(['go_to_focus_location', 'center'])
+        self.master.command_queue.put(['close_shutter'])
+        self.master.command_queue.put(['go_to_focus_location', 'center'])
         self.error_check()
         self.grid_forget()
-        ProcessScreen(self.master,
-                      self.settings,
-                      self.command_queue,
-                      self.error_queue,
-                      self.motion_control_monitor)
+        ProcessScreen(self.master)
 
     def go_to_focus_location(self, focused_location: str):
-        self.command_queue.put(['go_to_focus_location', focused_location])
+        self.master.command_queue.put(['go_to_focus_location', focused_location])
         self.error_check()
 
     def error_check(self):
         self.master.error_check()
-        if self.motion_control_monitor.busy_flag:
+        if self.master.motion_control_monitor.busy_flag:
             self.after(500, self.error_check)
 
 
 class ProcessScreen(ttk.Frame):
-    def __init__(self, master, settings, command_queue, error_queue, motion_control_monitor):
+    def __init__(self, master):
         assert isinstance(master, App)
-        assert isinstance(settings, Settings)
 
-        self.master = master
-        self.settings = settings
-        self.command_queue = command_queue
-        self.error_queue = error_queue
-        self.motion_control_monitor = motion_control_monitor
+        self.master: App = master
 
         super().__init__(master)
 
@@ -398,7 +369,7 @@ class ProcessScreen(ttk.Frame):
         self.grid(row=0, column=0, sticky="nsew")
 
     def method_button_start(self):
-        self.command_queue.put(['print'])
+        self.master.command_queue.put(['print'])
         self.update_label()
         self.error_check()
 
@@ -406,20 +377,21 @@ class ProcessScreen(ttk.Frame):
         self.master.close_application()
 
     def update_label(self):
-        if self.motion_control_monitor.busy_flag:
+        if self.master.motion_control_monitor.busy_flag:
             self.label_status_value.configure(text="running")
         else:
             self.label_status_value.configure(text="not running")
-        self.label_progress_value.configure(text=f"{self.motion_control_monitor.ring_counter} / {self.motion_control_monitor.rings_total}")
-        self.label_angular_velocity_value.configure(text=f"{self.motion_control_monitor.speed_axis3} deg/s")
-        self.label_position_value.configure(text=f"X: {self.motion_control_monitor.position_axis1} mm "
-                                                 f"Y: {self.motion_control_monitor.position_axis2} mm "
-                                                 f"φ: {self.motion_control_monitor.position_axis3} deg")
+        self.label_progress_value.configure(text=f"{self.master.motion_control_monitor.ring_counter}"
+                                                 f" / {self.master.motion_control_monitor.rings_total}")
+        self.label_angular_velocity_value.configure(text=f"{self.master.motion_control_monitor.speed_axis3} deg/s")
+        self.label_position_value.configure(text=f"X: {self.master.motion_control_monitor.position_axis1} mm "
+                                                 f"Y: {self.master.motion_control_monitor.position_axis2} mm "
+                                                 f"φ: {self.master.motion_control_monitor.position_axis3} deg")
         self.after(500, self.update_label)
 
     def error_check(self):
         self.master.error_check()
-        if self.motion_control_monitor.busy_flag:
+        if self.master.motion_control_monitor.busy_flag:
             self.after(500, self.error_check)
 
 
