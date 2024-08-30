@@ -27,9 +27,9 @@ class Settings:
         self.__laser_power = 150
         self.__y_min = 0
         self.__y_peak_to_peak = 128
-        self.__port_laser = "/dev/ttyUSB0"
-        self.__port_motion_controller = "/dev/ttyUSB1"
-        self.__port_shutter = "/dev/ttyUSB2"
+        self.__port_laser = "COM6"
+        self.__port_motion_controller = "COM5"
+        self.__port_shutter = "COM4"
 
         logger.info("System (Settings): Settings initialized")
         logger.debug(f"exposure time: {self.__exposure_time}\n"
@@ -606,4 +606,4 @@ class MotionControlThreadMonitor:
         with self.__position_axis3_lock:
             self.__position_axis3 = value
             if self.rings_total != "---":
-                self.percentage_done = float(value)/(float(self.rings_total) * 360)
+                self.percentage_done = (float(value)/(float(self.rings_total) * 360))*100
