@@ -475,7 +475,7 @@ class MotionControlThreadMonitor:
         self.__kill_flag = False
         self.__ring_counter = 1
         self.__rings_total = "---"
-        self.__percentage_done = "---"
+        self.__percentage_done = 0
         self.__speed_axis1 = "---"
         self.__speed_axis2 = "---"
         self.__speed_axis3 = "---"

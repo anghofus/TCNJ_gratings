@@ -383,7 +383,7 @@ class ProcessScreen(ttk.Frame):
             self.label_status_value.configure(text="not running")
         self.label_progress_value.configure(text=f"{self.master.motion_control_monitor.ring_counter}"
                                                  f" / {self.master.motion_control_monitor.rings_total} "
-                                                 f"({self.master.motion_control_monitor.percentage_done[0:3]} %)")
+                                                 f"({self.master.motion_control_monitor.percentage_done:.2f} %)")
         self.label_angular_velocity_value.configure(text=f"{self.master.motion_control_monitor.speed_axis3} deg/s")
         self.label_position_value.configure(text=f"X: {self.master.motion_control_monitor.position_axis1} mm "
                                                  f"Y: {self.master.motion_control_monitor.position_axis2} mm "
