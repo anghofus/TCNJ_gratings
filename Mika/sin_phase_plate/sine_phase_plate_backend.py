@@ -346,7 +346,10 @@ class InstrumentController:
         self.laser.send_command("L=1")
         self.laser.send_command(f"P={laser_power}")
         self.shutter.open_shutter()
-        self.esp.move_axis_relative(3, 360, angular_speed)
+        if image_index % 2 == 0:
+            self.esp.move_axis_relative(3, 360, angular_speed)
+        else:
+            self.esp.move_axis_relative(3, -360, angular_speed)
 
 
 class MotionControlThread(Thread):
