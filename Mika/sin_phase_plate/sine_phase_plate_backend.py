@@ -331,7 +331,7 @@ class InstrumentController:
 
         assert image_index >= 0, "image index must be grater than zero"
         assert grating_width > 0, "grating width must be grater than zero"
-        assert exposure_time > 11, "exposure time must be grater than 11 s"
+        assert exposure_time >= 11, "exposure time must be grater than 11 s"
         assert 30 <= laser_power <= 300, "laser power must be between 30 and 300 mW"
 
         radius = grating_width * (image_index + 1)
