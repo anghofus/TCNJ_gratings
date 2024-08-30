@@ -20,7 +20,7 @@ class Settings:
         self.__radius = None
         self.__focal_length = None
 
-        self.__exposure_time = 5
+        self.__exposure_time = 11
         self.__grating_width = 70
         self.__grating_height = 40
         self.__wavelength = 633
@@ -69,7 +69,7 @@ class Settings:
 
     @exposure_time.setter
     def exposure_time(self, value: float):
-        assert value >= 0, "Exposure time must be greater than zero!"
+        assert value >= 11, "Exposure time must be greater than 11!"
         self.__exposure_time = value
         logger.debug(f"System (Settings): exposure time set to {value}")
 
@@ -331,11 +331,11 @@ class InstrumentController:
 
         assert image_index >= 0, "image index must be grater than zero"
         assert grating_width > 0, "grating width must be grater than zero"
-        assert exposure_time > 0, "exposure time must be grater than zero"
+        assert exposure_time > 11, "exposure time must be grater than 11 s"
         assert 30 <= laser_power <= 300, "laser power must be between 30 and 300 mW"
 
         radius = grating_width * (image_index + 1)
-        angular_speed = grating_height / (exposure_time * radius)
+        angular_speed = (grating_height / (exposure_time * radius)) * 180/np.pi
 
         logger.info(f"System (InstrumentController): print ring {image_index + 1}"
                     f" with radius {radius} and speed {angular_speed}")
@@ -474,7 +474,8 @@ class MotionControlThreadMonitor:
         self.__busy_flag = False
         self.__kill_flag = False
         self.__ring_counter = 1
-        self.__rings_total = None
+        self.__rings_total = "---"
+        self.__percentage_done = "---"
         self.__speed_axis1 = "---"
         self.__speed_axis2 = "---"
         self.__speed_axis3 = "---"
@@ -487,6 +488,7 @@ class MotionControlThreadMonitor:
         self.__kill_flag_lock = threading.Lock()
         self.__ring_counter_lock = threading.Lock()
         self.__rings_total_lock = threading.Lock()
+        self.__percentage_done_lock = threading.Lock()
         self.__speed_axis1_lock = threading.Lock()
         self.__speed_axis2_lock = threading.Lock()
         self.__speed_axis3_lock = threading.Lock()
@@ -533,6 +535,16 @@ class MotionControlThreadMonitor:
     def rings_total(self, value: int):
         with self.__rings_total_lock:
             self.__rings_total = value
+
+    @property
+    def percentage_done(self):
+        with self.__percentage_done_lock:
+            return self.__percentage_done
+
+    @percentage_done.setter
+    def percentage_done(self, value: int):
+        with self.__percentage_done_lock:
+            self.__percentage_done = value
 
     @property
     def speed_axis1(self):
@@ -593,3 +605,5 @@ class MotionControlThreadMonitor:
     def position_axis3(self, value):
         with self.__position_axis3_lock:
             self.__position_axis3 = value
+            if self.rings_total != "---":
+                self.percentage_done = float(value)/(float(self.rings_total) * 360)
