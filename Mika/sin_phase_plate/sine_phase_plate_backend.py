@@ -304,15 +304,15 @@ class InstrumentController:
     def go_to_focus_location(self, focus_location):
         logger.info(f"System (InstrumentController): go to focus location \"{focus_location}\"")
         if focus_location == "top":
-            coordinates = (4.91, 22)
+            coordinates = (3.679, 22)
         elif focus_location == "bottom":
-            coordinates = (4.91, 8)
+            coordinates = (3.679, 8)
         elif focus_location == "left":
-            coordinates = (12, 15.279)
+            coordinates = (12, 16.51)
         elif focus_location == "right":
             coordinates = (0, 16.51)
         elif focus_location == "center":
-            coordinates = (4.91, 15.279)
+            coordinates = (3.679, 16.51)
         else:
             raise Exception('invalid focus location')
 
@@ -431,7 +431,7 @@ class MotionControlThread(Thread):
 
         logger.info(f"System (MotionControlThread): Printing phase plate")
 
-        self.instruments.esp.move_to_coordinates(4.91, 15.279)
+        self.instruments.esp.move_to_coordinates(3.679, 16.51)
 
         for image_index, image in enumerate(images):
             self.image_display.thread_safe_show_image(image)
