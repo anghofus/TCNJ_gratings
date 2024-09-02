@@ -609,4 +609,4 @@ class MotionControlThreadMonitor:
         with self.__position_axis3_lock:
             self.__position_axis3 = value
             if self.rings_total != "---":
-                self.percentage_done = (float(value)/(float(self.rings_total) * 360))*100
+                self.percentage_done = ((abs(float(value))+(self.ring_counter*360))/(float(self.rings_total) * 360))*100
