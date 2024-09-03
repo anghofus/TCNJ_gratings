@@ -26,21 +26,21 @@ coloredlogs.install(
 
 class ImageDisplay(tk.Toplevel):
     def __init__(self, monitor: int):
-        assert monitor > 0, "Monitor must be greater than zero!"
+        assert isinstance(monitor, int) and monitor >= 0, "Monitor must be a non-negative integer!"
 
         super().__init__()
 
         # Get information about all monitors
         monitors = screeninfo.get_monitors()
 
-        if len(monitors) < 2:
-            raise NoSecondMonitorError("No second monitor found")
+        if len(monitors) <= monitor:
+            raise NoSecondMonitorError(f"Monitor index {monitor} is out of range. Found {len(monitors)} monitors.")
 
-        # Assume the second monitor is at index 1
-        second_monitor = monitors[monitor]
+        # Select the specified monitor
+        selected_monitor = monitors[monitor]
 
-        self.geometry(f"{second_monitor.width}x{second_monitor.height}+{second_monitor.x}+{second_monitor.y}")
-        # self.attributes("-fullscreen", True)
+        self.geometry(f"{selected_monitor.width}x{selected_monitor.height}+{selected_monitor.x}+{selected_monitor.y}")
+        # self.attributes("-fullscreen", True)  # Uncomment to enable fullscreen
         self.configure(background='black')
 
         # Initialize the label to None
@@ -57,17 +57,16 @@ class ImageDisplay(tk.Toplevel):
             self.label.image = photo  # Keep a reference to avoid garbage collection
             self.label.pack()
         else:
-            self.__update_image(image_object)
+            self.__update_image(photo)
 
     def thread_safe_show_image(self, image_object):
         assert isinstance(image_object, Image.Image), "Image must be a PIL Image object"
         self.after(0, self.show_image, image_object)
 
-    def __update_image(self, image_object):
-        assert isinstance(image_object, Image.Image), "Image must be a PIL Image object"
+    def __update_image(self, photo):
+        assert isinstance(photo, ImageTk.PhotoImage), "Image must be a PhotoImage object"
 
-        photo = ImageTk.PhotoImage(image_object)
-
+        # Update the image in the existing label
         self.label.configure(image=photo)
         self.label.image = photo  # Update the reference to avoid garbage collection
 
