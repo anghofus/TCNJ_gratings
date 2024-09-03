@@ -25,8 +25,8 @@ class Settings:
         self.__grating_height = 40
         self.__wavelength = 633
         self.__laser_power = 150
-        self.__y_min = 0
-        self.__y_peak_to_peak = 128
+        self.__y_min = 65
+        self.__y_peak_to_peak = 85
         self.__port_laser = "COM6"
         self.__port_motion_controller = "COM5"
         self.__port_shutter = "COM4"
