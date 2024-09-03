@@ -40,8 +40,9 @@ class ImageDisplay(tk.Toplevel):
         selected_monitor = monitors[monitor]
 
         self.geometry(f"{selected_monitor.width}x{selected_monitor.height}+{selected_monitor.x}+{selected_monitor.y}")
-        # self.attributes("-fullscreen", True)  # Uncomment to enable fullscreen
         self.configure(background='black')
+        
+        self.overrideredirect(True)
 
         # Initialize the label to None
         self.label = None
@@ -84,7 +85,7 @@ class App(tk.Tk):
         self.command_queue = queue.Queue()
         self.error_queue = queue.Queue()
         self.motion_control_monitor = MotionControlThreadMonitor()
-        self.image_display = ImageDisplay(1)
+        self.image_display = ImageDisplay(0)
 
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
