@@ -14,7 +14,7 @@ class PatternGeneration:
         # Set the file path and image filename
         self.filepath_output = os.getcwd()
         self.filepath_input = os.getcwd()
-        filename_image = "apt_logo_270px.png"
+        filename_image = "/home/anghofus/PycharmProjects/TCNJ_gratings/Mika/color chart/color_chart.png"
 
         # Define dimensions for subpixels and SLM (spatial light modulator)
         self.subpixel_width = 640
@@ -39,9 +39,7 @@ class PatternGeneration:
         self.pixel = np.zeros((self.slm_height, self.slm_width))
 
         # Load and validate the image
-        image = Image.open(os.path.join(self.filepath_input, filename_image)).rotate(90, expand=1)
-
-        image.show()
+        image = Image.open(os.path.join(self.filepath_input, filename_image))
 
         if image.size > (270, 270):
             raise Exception("Image must have a resolution of 270x270 or less")
@@ -93,25 +91,26 @@ class PatternGeneration:
             total = int(rgb[0]) + int(rgb[1]) + int(rgb[2])
             subpixel = np.zeros((self.subpixel_height, self.subpixel_width))
 
-            # Calculate widths for each color band within the subpixel
-            red_width = int(rgb[0]) / total * self.subpixel_width
-            green_width = int(rgb[1]) / total * self.subpixel_width
+            if total != 0:
+                # Calculate widths for each color band within the subpixel
+                red_width = int(rgb[0]) / total * self.subpixel_width
+                green_width = int(rgb[1]) / total * self.subpixel_width
 
-            j = 0
-            k = 0
-            # Assign waveform values to subpixel based on RGB widths
-            while j < red_width:
-                subpixel[0][j] = waveform_red[j]
-                j += 1
-            while j < red_width + green_width - 1:
-                subpixel[0][j] = waveform_green[j]
-                j += 1
-            while j < self.subpixel_width:
-                subpixel[0][j] = waveform_blue[j]
-                j += 1
-            while k < self.subpixel_height:
-                subpixel[k] = subpixel[0]
-                k += 1
+                j = 0
+                k = 0
+                # Assign waveform values to subpixel based on RGB widths
+                while j < red_width:
+                    subpixel[0][j] = waveform_red[j]
+                    j += 1
+                while j < red_width + green_width - 1:
+                    subpixel[0][j] = waveform_green[j]
+                    j += 1
+                while j < self.subpixel_width:
+                    subpixel[0][j] = waveform_blue[j]
+                    j += 1
+                while k < self.subpixel_height:
+                    subpixel[k] = subpixel[0]
+                    k += 1
 
             self.subpixel_list.append(subpixel)
 
