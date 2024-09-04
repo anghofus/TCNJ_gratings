@@ -39,7 +39,6 @@ def generate_images(colors):
 
     for color in colors:
         color_array = generate_color_array(color, linespace, height)
-        print(color_array.shape)
         color_arrays.append(color_array)
 
     image_array = np.vstack(color_arrays)
