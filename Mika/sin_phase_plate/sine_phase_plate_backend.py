@@ -335,7 +335,7 @@ class InstrumentController:
         assert 30 <= laser_power <= 300, "laser power must be between 30 and 300 mW"
 
         radius = grating_width * (image_index + 1)
-        angular_speed = (grating_height / (exposure_time * radius)) * 180/np.pi
+        angular_speed = (grating_height / (exposure_time * radius)) * 180 / np.pi
 
         logger.info(f"System (InstrumentController): print ring {image_index + 1}"
                     f" with radius {radius} and speed {angular_speed}")
