@@ -341,7 +341,7 @@ class InstrumentController:
                     f" with radius {radius} and speed {angular_speed}")
 
         if image_index != 0:
-            self.esp.move_axis_relative(1, grating_width)
+            self.esp.move_axis_relative(1, -grating_width)
         self.esp.wait_for_movement()
         self.laser.send_command("L=1")
         self.laser.send_command(f"P={laser_power}")
