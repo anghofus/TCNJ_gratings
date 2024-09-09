@@ -2,7 +2,7 @@ import numpy as np
 from PIL import Image
 import os
 
-filename = "color_chart.jpg"
+filename = "color_chart.png"
 filepath = os.path.join(os.getcwd(), filename)
 
 linespace = np.linspace(1, 0, 270)
