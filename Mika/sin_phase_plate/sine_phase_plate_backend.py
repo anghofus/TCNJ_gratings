@@ -27,6 +27,8 @@ class Settings:
         self.__laser_power = 150
         self.__y_min = 65
         self.__y_peak_to_peak = 85
+        self.__center_point_x = 3.325
+        self.__center_point_y = 16.688
         self.__port_laser = "COM6"
         self.__port_motion_controller = "COM5"
         self.__port_shutter = "COM4"
@@ -39,6 +41,8 @@ class Settings:
                      f"\t\t\tlaser power: {self.__laser_power}\n"
                      f"\t\t\ty_min: {self.__y_min}\n"
                      f"\t\t\ty_peak_to_peak: {self.__y_peak_to_peak}\n"
+                     f"\t\t\tcenter_point_x: {self.__center_point_y}\n"
+                     f"\t\t\tcenter_point_y: {self.__center_point_y}\n"
                      f"\t\t\tport_laser: {self.__port_laser}\n"
                      f"\t\t\tport_motion_controller: {self.__port_motion_controller}\n"
                      f"\t\t\tport_shutter: {self.__port_shutter}")
@@ -134,6 +138,26 @@ class Settings:
         logger.debug(f"System (Settings): y_peak_to_peak set to {value}")
 
     @property
+    def center_point_x(self):
+        return self.__center_point_x
+
+    @center_point_x.setter
+    def center_point_x(self, value: int):
+        assert 0 <= value <= 25, "center_point_x must be between 0 and 25"
+        self.__center_point_x = value
+        logger.debug(f"System (Settings): center_point_x set to {value}")
+
+    @property
+    def center_point_y(self):
+        return self.__center_point_y
+
+    @center_point_y.setter
+    def center_point_y(self, value: int):
+        assert 0 <= value <= 25, "center_point_y must be between 0 and 25"
+        self.__center_point_y = value
+        logger.debug(f"System (Settings): center_point_y set to {value}")
+
+    @property
     def port_laser(self):
         return self.__port_laser
 
@@ -172,6 +196,8 @@ class Settings:
                 self.__laser_power = settings['laser_power']
                 self.__y_min = settings['y_min']
                 self.__y_peak_to_peak = settings['y_peak_to_peak']
+                self.__center_point_x = settings['center_point_x']
+                self.__center_point_y = settings['center_point_y']
                 self.__port_laser = settings['port_laser']
                 self.__port_motion_controller = settings['port_motion_controller']
                 self.__port_shutter = settings['port_shutter']
@@ -191,6 +217,8 @@ class Settings:
                 'laser_power': self.__laser_power,
                 'y_min': self.__y_min,
                 'y_peak_to_peak': self.__y_peak_to_peak,
+                'center_point_x': self.__center_point_x,
+                'center_point_y': self.__center_point_y,
                 'port_laser': self.__port_laser,
                 'port_motion_controller': self.__port_motion_controller,
                 'port_shutter': self.__port_shutter
@@ -279,10 +307,11 @@ class SinePhasePlateGeneration:
 
 
 class InstrumentController:
-    def __init__(self, port_laser: str, port_esp: str, port_shutter: str):
+    def __init__(self, port_laser: str, port_esp: str, port_shutter: str, center_point: tuple):
         self.laser = LaserController(port_laser)
         self.esp = ESPController(port_esp)
         self.shutter = ShutterController(port_shutter)
+        self.center_point = center_point
 
         if not self.laser.connection_check():
             raise Exception('Laser not connected')
@@ -304,15 +333,15 @@ class InstrumentController:
     def go_to_focus_location(self, focus_location):
         logger.info(f"System (InstrumentController): go to focus location \"{focus_location}\"")
         if focus_location == "top":
-            coordinates = (3.235, 22)
+            coordinates = (self.center_point[0], 22)
         elif focus_location == "bottom":
-            coordinates = (3.235, 8)
+            coordinates = (self.center_point[0], 8)
         elif focus_location == "left":
-            coordinates = (12, 16.858)
+            coordinates = (12, self.center_point[1])
         elif focus_location == "right":
-            coordinates = (0, 16.858)
+            coordinates = (0, self.center_point[1])
         elif focus_location == "center":
-            coordinates = (3.235, 16.858)
+            coordinates = (self.center_point[0], self.center_point[1])
         else:
             raise Exception('invalid focus location')
 
@@ -365,9 +394,12 @@ class MotionControlThread(Thread):
         self.error_queue = error_queue
         self.monitor = monitor
         self.image_display = image_display
+
+        center_point = (self.settings.center_point_x, self.settings.center_point_y)
         self.instruments = InstrumentController(self.settings.port_laser,
                                                 self.settings.port_motion_controller,
-                                                self.settings.port_shutter)
+                                                self.settings.port_shutter,
+                                                center_point)
 
         self.function_map = {
             'go_to_focus_location': self.instruments.go_to_focus_location,
@@ -404,12 +436,17 @@ class MotionControlThread(Thread):
         function_str = command[0]
         parameters = command[1:]
 
-        try:
-            func = self.function_map.get(function_str, lambda: self.__default_function(function_str))
-            func(*parameters)
-        except Exception as e:
-            logger.error(f"System (MotionControlThread): Error in {repr(function_str)}: {e}")
-            self.error_queue.put(e)
+        for attempt in range(2):  # 1 initial try + 1 retry
+            try:
+                func = self.function_map.get(function_str, lambda: self.__default_function(function_str))
+                func(*parameters)
+                break  # If successful, break out of the loop
+            except Exception as e:
+                if attempt == 0:  # On the first attempt, retry
+                    logger.warning(f"Retrying command {repr(function_str)} due to error: {e}")
+                else:  # On the second attempt (retry), log the error and add it to the queue
+                    logger.error(f"System (MotionControlThread): Error in {repr(function_str)}: {e}")
+                    self.error_queue.put(e)
 
     def __default_function(self, function_str):
         logger.error(f"System (MotionControlThread): Command {function_str} unknown")
@@ -424,6 +461,8 @@ class MotionControlThread(Thread):
                                              self.settings.y_peak_to_peak)
 
         images = generator.generate_images()
+
+        self.monitor.ring_counter = 1
         self.monitor.rings_total = len(images)
 
         grating_width = self.settings.grating_width / 1000
@@ -431,7 +470,7 @@ class MotionControlThread(Thread):
 
         logger.info(f"System (MotionControlThread): Printing phase plate")
 
-        self.instruments.esp.move_to_coordinates(3.235, 16.858)
+        self.instruments.esp.move_to_coordinates(self.settings.center_point_x, self.settings.center_point_y)
 
         for image_index, image in enumerate(images):
             self.image_display.thread_safe_show_image(image)
