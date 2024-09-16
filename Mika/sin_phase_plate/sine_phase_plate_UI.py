@@ -262,7 +262,7 @@ class SettingsScreen(ttk.Frame):
         self.master.settings.y_min = int(self.entry_y_min.get())
         self.master.settings.y_peak_to_peak = int(self.entry_y_peak_to_peak.get())
         self.master.settings.center_point_x = float(self.entry_center_point_x.get())
-        self.master.settings.center_point_y = int(self.entry_center_point_y.get())
+        self.master.settings.center_point_y = float(self.entry_center_point_y.get())
         self.master.settings.port_laser = self.entry_port_laser.get()
         self.master.settings.port_motion_controller = self.entry_port_motion_controller.get()
         self.master.settings.port_shutter = self.entry_port_shutter.get()
