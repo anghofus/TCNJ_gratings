@@ -155,11 +155,11 @@ class ESPController:
         Ensure that all connected stages are clear of obstructions and properly mounted before calling this method
         to prevent potential damage during the homing process.
         """
-        for i in range(3):
-            self.send_command("MO", i + 1)
-            logger.info(f"ESP: Axis {i+1} power on")
-            self.send_command("OR", i + 1)
-            logger.info(f"ESP: Axis {i+1} homing")
+        for i in range(3, 0, -1):
+            self.send_command("MO", i)
+            logger.info(f"ESP: Axis {i} power on")
+            self.send_command("OR", i)
+            logger.info(f"ESP: Axis {i} homing")
         self.wait_for_movement()
 
     def close_connection(self):
