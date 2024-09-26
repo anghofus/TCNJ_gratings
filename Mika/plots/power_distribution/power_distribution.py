@@ -17,7 +17,7 @@ x_max = np.array(z)
 period = np.array(power)
 
 # Plot the data and the fit
-plt.figure(figsize=(10, 3))
+plt.figure(figsize=(10, 4))
 plt.plot(z, power, 'b.', label='data')
 
 plt.xlabel("distance to lens [mm]")
