@@ -17,7 +17,7 @@ x_max = np.array(z)
 period = np.array(power)
 
 # Plot the data and the fit
-plt.figure(figsize=(10, 6))
+plt.figure(figsize=(10, 3))
 plt.plot(z, power, 'b.', label='data')
 
 plt.xlabel("distance to lens [mm]")
@@ -25,5 +25,5 @@ plt.ylabel("power [µW]")
 plt.title("Power distribution behind sine phase plate")
 plt.grid(True)
 
-plt.savefig("power_distribution.png")
+plt.savefig("power_distribution_1.png")
 plt.show()
