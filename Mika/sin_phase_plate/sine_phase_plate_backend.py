@@ -33,6 +33,8 @@ class Settings:
         self.__port_motion_controller = "COM5"
         self.__port_shutter = "COM4"
 
+        self.read_from_json()
+
         logger.info("System (Settings): Settings initialized")
         logger.debug(f"exposure time: {self.__exposure_time}\n"
                      f"\t\t\tgrating width: {self.__grating_width}\n"
