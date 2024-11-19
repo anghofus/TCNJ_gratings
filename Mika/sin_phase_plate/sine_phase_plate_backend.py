@@ -248,8 +248,8 @@ class SinePhasePlateGeneration:
         self.__y_peak_to_peak = y_peak_to_peak
 
         self.__slm_count = int(self.__radius / self.__grating_width)
-        self.__waveform_width = int(self.__slm_count * 1920)
-        self.__pixel_width = self.__radius / self.__waveform_width
+        self.__waveform_length = int(self.__slm_count * 1920)
+        self.__pixel_width = self.__radius / self.__waveform_length
 
         self.__waveform = []
 
@@ -282,7 +282,7 @@ class SinePhasePlateGeneration:
 
     def __generate_waveform(self):
         logger.info("System: Generating waveform")
-        for i in range(self.__waveform_width):
+        for i in range(self.__waveform_length):
             r = i * self.__pixel_width
             self.__waveform.append(self.__chirp_function(r))
         logger.info("System (SinePhasePlateGeneration): Waveform generated")
