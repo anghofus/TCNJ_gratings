@@ -249,7 +249,7 @@ class SinePhasePlateGeneration:
 
         self.__slm_count = int(self.__radius / self.__grating_width)
         self.__waveform_length = int(self.__slm_count * 1920)
-        self.__pixel_width = self.__radius / self.__waveform_length
+        self.__pixel_width = (self.__slm_count * self.__grating_width) / self.__waveform_length
 
         self.__waveform = []
 
