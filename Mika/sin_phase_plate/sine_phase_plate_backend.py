@@ -302,7 +302,8 @@ class SinePhasePlateGeneration:
         return images
 
     def __chirp_function(self, r):
-        f = self.__y_min + ((1 + scipy.signal.sawtooth(math.radians((2 * np.pi) / (self.__focal_length * self.__wavelength) * r ** 2))) / 2) * self.__y_peak_to_peak
+        x = np.pi/ (self.__focal_length * self.__wavelength) * r ** 2
+        f = self.__y_min + (1 + scipy.signal.sawtooth(x) / 2) * self.__y_peak_to_peak
         return f
 
 
