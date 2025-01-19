@@ -80,7 +80,8 @@ class SinePhasePlateGeneration:
         return images
 
     def __chirp_function(self, r):
-        f = self.__y_min + ((1 + scipy.signal.sawtooth(math.radians((2 * np.pi) / (self.__focal_length * self.__wavelength) * r ** 2))) / 2) * self.__y_peak_to_peak
+        x = np.pi / (self.__focal_length * self.__wavelength) * r ** 2
+        f = self.__y_min + ((1 + scipy.signal.sawtooth(x)) / 2) * self.__y_peak_to_peak
         return f
 
 def find_period(numbers):
@@ -104,7 +105,7 @@ def find_period(numbers):
         return None  # Return None if fewer than three minima are found
 
 
-foo = SinePhasePlateGeneration(2.5, 1, 635, 70, 65, 85)
+foo = SinePhasePlateGeneration(2.5, 30, 633, 70, 65, 85)
 
 waveform = foo.generate_waveform()
 
@@ -129,6 +130,13 @@ for i in range(foo.slm_count):
 
     csv_content.append(row)
 
-with open("period.csv", "w", newline="") as file:
+with open("period_test.csv", "w", newline="") as file:
     writer = csv.writer(file)
     writer.writerows(csv_content)
+
+plt.plot(waveform[-1920:])
+plt.show()
+
+images = foo.generate_images()
+for i, image in enumerate(images):
+    image.save(f"z_image{i}.png")
