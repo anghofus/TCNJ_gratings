@@ -3,6 +3,8 @@ from PIL import Image
 import os
 from scipy import signal
 import csv
+import tkinter as tk
+from tkinter import filedialog, messagebox
 
 
 class PatternGeneration:
@@ -13,8 +15,8 @@ class PatternGeneration:
         """
         # Set the file path and image filename
         self.filepath_output = os.getcwd()
-        self.filepath_input = os.getcwd()
-        filename_image = "/home/anghofus/PycharmProjects/TCNJ_gratings/Mika/color chart/color_chart.png"
+
+        self.path_image1, self.path_image2, self.path_image3, self.path_image4, self.path_image5, self.path_image6 = select_images()
 
         # Define dimensions for subpixels and SLM (spatial light modulator)
         self.subpixel_width = 640
@@ -313,6 +315,22 @@ def calculate_coordinates(rows, columns, slm_x, slm_y):
         start_y += slm_y
 
     return points
+
+def select_images():
+    root = tk.Tk()
+    root.withdraw()
+
+    while True:
+        file_path = filedialog.askopenfilenames(title="Select exactly 6 images")
+
+        if file_path == ():
+            raise KeyboardInterrupt
+        elif len(file_path) != 6:
+            messagebox.showerror("Error", "Select exactly 6 images")
+            continue
+        else:
+            break
+    return file_path
 
 
 if __name__ == "__main__":
