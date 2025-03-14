@@ -16,14 +16,11 @@ class PatternGeneration:
         # Set the file path and image filename
         self.filepath_output = os.getcwd()
 
-        self.path_image1, self.path_image2, self.path_image3, self.path_image4, self.path_image5, self.path_image6 = select_images()
+        self.img_paths = select_images()
 
         # Define dimensions for subpixels and SLM (spatial light modulator)
         self.subpixel_width = 640
         self.subpixel_height = 576
-
-        self.pixel_height = 2
-        self.pixel_width = 3
 
         self.slm_width = 1920
         self.slm_height = 1152
@@ -31,29 +28,13 @@ class PatternGeneration:
         self.slm_y = 323
 
         # Define maximum values for RGB waveforms
-        self.x_max_red = 38.91
-        self.x_max_green = 32.7
-        self.x_max_blue = 30
+        self.x_max = 20
         self.y_max = 128
 
         # Initialize subpixel list and main pixel grid
         self.subpixel_list = []
         self.pixel = np.zeros((self.slm_height, self.slm_width))
 
-        # Load and validate the image
-        image = Image.open(os.path.join(self.filepath_input, filename_image))
-
-        if image.size > (270, 270):
-            raise Exception("Image must have a resolution of 270x270 or less")
-
-        # Set dimensions of the image in terms of subpixels
-        self.image_width, self.image_height = image.size[0] // 3, image.size[1] // 2
-
-        # Convert image to an RGB array
-        self.rgb_array = image_to_rgb_array(image)
-        self.pixel_list = self.rgb_array_to_pixel_list(self.rgb_array)
-        self.added_RGB_values = self.generate_added_RGB_values()
-        self.create_csv()
 
         # Generate and save subdivided pixel patterns for each pixel
         for i, pixel in enumerate(self.pixel_list):
@@ -63,68 +44,8 @@ class PatternGeneration:
             slm_image.save(slm_image_filepath)
             print(f"image {i+1} of {len(self.pixel_list)} saved")
 
-    def subdivided_pixel(self, rgb_color: list):
-        """
-        Create subdivided pixels based on the given color list.
-
-        Parameters:
-        rgb_color (list): A list of 6 RGB colors.
-
-        Returns:
-        Image: A PIL image object representing the generated pixel image.
-        """
-        assert len(rgb_color) == 6, "color list must have 6 entries"
-
-        # Generate time array for the waveforms
-        t = np.linspace(0, self.subpixel_width, self.subpixel_width)
-
-        # Define the angular frequencies for the waveforms based on max values
-        omega_red = 2 * np.pi * 1 / self.x_max_red
-        omega_green = 2 * np.pi * 1 / self.x_max_green
-        omega_blue = 2 * np.pi * 1 / self.x_max_blue
-
-        # Generate the waveforms for each color channel using a sawtooth wave
-        waveform_red = (1 + signal.sawtooth(omega_red * t)) * self.y_max / 2
-        waveform_green = (1 + signal.sawtooth(omega_green * t)) * self.y_max / 2
-        waveform_blue = (1 + signal.sawtooth(omega_blue * t)) * self.y_max / 2
-
-        # Generate subpixel patterns based on RGB percentages
-        for i, rgb in enumerate(rgb_color):
-            total = int(rgb[0]) + int(rgb[1]) + int(rgb[2])
-            subpixel = np.zeros((self.subpixel_height, self.subpixel_width))
-
-            if total != 0:
-                # Calculate widths for each color band within the subpixel
-                red_width = int(rgb[0]) / total * self.subpixel_width
-                green_width = int(rgb[1]) / total * self.subpixel_width
-
-                j = 0
-                k = 0
-                # Assign waveform values to subpixel based on RGB widths
-                while j < red_width:
-                    subpixel[0][j] = waveform_red[j]
-                    j += 1
-                while j < red_width + green_width - 1:
-                    subpixel[0][j] = waveform_green[j]
-                    j += 1
-                while j < self.subpixel_width:
-                    subpixel[0][j] = waveform_blue[j]
-                    j += 1
-                while k < self.subpixel_height:
-                    subpixel[k] = subpixel[0]
-                    k += 1
-
-            self.subpixel_list.append(subpixel)
-
-        # Place the generated subpixels into the main pixel grid
-        for i in range(len(self.subpixel_list)):
-            self.place_subpixel(i)
-
-        # Convert the pixel grid to an image and return it
-        image = Image.fromarray(self.pixel).convert("L")
-        self.subpixel_list = []
-
-        return image
+        self.added_RGB_values = self.generate_added_RGB_values()
+        self.create_csv()
 
     def place_subpixel(self, i: int):
         """
@@ -154,66 +75,6 @@ class PatternGeneration:
         # Place the entire subpixel matrix into the main pixel grid at once
         self.pixel[y_coordinate:y_coordinate + self.subpixel_height,
         x_coordinate:x_coordinate + self.subpixel_width] = current_subpixel
-
-    def rgb_array_to_pixel_list(self, rgb_array):
-        """
-        Convert the RGB array to a list of pixels.
-
-        Parameters:
-        rgb_array (ndarray): The RGB array of the image.
-
-        Returns:
-        list: A list of pixels.
-        """
-        pixel_list = []
-
-        # Iterate over the RGB array in steps of pixel_height and pixel_width
-        for i, rgb_array_y in enumerate(range(rgb_array.shape[0], 0, - self.pixel_height)):
-            if i % 2 == 0:
-                for rgb_array_x in range(rgb_array.shape[1] - 1, 0, -self.pixel_width):
-                    sub_pixel_color = self.get_subpixel_color(rgb_array, rgb_array_x, rgb_array_y, 0)
-                    pixel_list.append(sub_pixel_color)
-            else:
-                for rgb_array_x in range(0, rgb_array.shape[1] - 1, self.pixel_width):
-                    sub_pixel_color = self.get_subpixel_color(rgb_array, rgb_array_x, rgb_array_y, 1)
-                    pixel_list.append(sub_pixel_color)
-
-        return pixel_list
-
-    def get_subpixel_color(self, rgb_array, rgb_array_x, rgb_array_y, i):
-
-        sub_pixel_color = []
-        # Collect the colors for each subpixel
-        for sub_pixel_y in range(self.pixel_height, 0, -1):
-            for sub_pixel_x in range(self.pixel_width, 0, -1):
-                target_y = rgb_array_y - sub_pixel_y
-                if i == 1:
-                    target_x = 3 + rgb_array_x - sub_pixel_x
-                elif i == 0:
-                    target_x = 1 + rgb_array_x - sub_pixel_x
-                else:
-                    raise ValueError
-                sub_pixel_color.append(rgb_array[target_y][target_x])
-        return sub_pixel_color
-
-    def generate_added_RGB_values(self):
-        """
-        Calculate the sum of RGB values for each pixel and average them.
-
-        Returns:
-        list: A list of averaged RGB values.
-        """
-        added_RGB_values = []
-        for i, pixel in enumerate(self.pixel_list):
-            added_color = []
-            # Sum the RGB values for each subpixel
-            for subpixel in pixel:
-                sum_subpixel = int(subpixel[0]) + int(subpixel[1]) + int(subpixel[2])
-                added_color.append(sum_subpixel)
-            average = sum(added_color) / len(added_color)
-            added_RGB_values.append(average)
-
-        return added_RGB_values
 
     def create_csv(self):
         """
@@ -254,36 +115,6 @@ class PatternGeneration:
             writer.writerows(modified_data)
 
         print("Both CSV-Sheets have been created")
-
-def image_to_rgb_array(image):
-    """
-    Convert an image to an RGB array.
-
-    Parameters:
-    image (PIL.Image): The input image.
-
-    Returns:
-    ndarray: An array representation of the image in RGB format.
-    """
-    # Split the image into its RGB components
-    image_split = image.split()
-
-    # Convert each component to a numpy array
-    red_array = np.asarray(image_split[0])
-    green_array = np.asarray(image_split[1])
-    blue_array = np.asarray(image_split[2])
-
-    height, width = red_array.shape[:2]
-
-    # Initialize an empty array to hold the RGB tuples
-    rgb_array = np.zeros((height, width), dtype=object)
-
-    # Combine the RGB components into tuples
-    for y in range(height):
-        for x in range(width):
-            rgb_array[y][x] = (red_array[y][x], green_array[y][x], blue_array[y][x])
-
-    return rgb_array
 
 def calculate_coordinates(rows, columns, slm_x, slm_y):
     """
