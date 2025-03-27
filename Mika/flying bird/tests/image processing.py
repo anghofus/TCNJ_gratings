@@ -21,7 +21,7 @@ class ImageProcessing:
         self.threshold = 150
         self.x_max = [20, 20, 20, 20, 20, 20]
         self.y_max = [128, 128, 128, 128, 128, 128]
-        self.angles = [0, 60, 120, 210, 270, 330]
+        self.angles = [0, 25, 50, 100, 125, 150]
 
         self.file_path = get_file_path()
         self.images = []
@@ -41,6 +41,8 @@ class ImageProcessing:
             slm_image_filepath = os.path.join(self.filepath_output, slm_image_filename)
             slm_image.save(slm_image_filepath)
             print(f"{i} of {len(self.binary_pixel_list)} images generated")
+
+        print(len(self.binary_pixel_list))
 
 
 
