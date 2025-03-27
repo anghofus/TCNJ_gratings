@@ -45,9 +45,8 @@ class PatternGeneration:
 
         self.image_width, self.image_height = 30, 45
 
+        self.added_RGB_values = []
         self.binary_pixel_list = self.generate_binary_pixel_list(self.images)
-
-        self.added_RGB_values = self.generate_added_RGB_values()
         self.create_csv()
 
         for i, pixel in enumerate(self.binary_pixel_list):
@@ -55,14 +54,14 @@ class PatternGeneration:
             slm_image_filename = f"pattern_{i+1}.png"
             slm_image_filepath = os.path.join(self.filepath_output, slm_image_filename)
             slm_image.save(slm_image_filepath)
-            print(f"{i} of {len(self.binary_pixel_list)} images generated")
+            print(f"{i+1} of {len(self.binary_pixel_list)} images generated")
 
     def generate_binary_pixel_list(self, image_list):
         matrices =[]
         binary_pixel_list = []
         for image in image_list:
             matrix = np.asarray(image).copy()
-            matrix[matrix < self.threshold] = 0
+            matrix[matrix <= self.threshold] = 0
             matrix[matrix > self.threshold] = 1
             matrices.append(matrix)
 
@@ -74,12 +73,21 @@ class PatternGeneration:
 
                 binary_pixel_list.append(pixel)
 
+                if any(pixel):
+                    self.added_RGB_values.append(765)
+                else:
+                    self.added_RGB_values.append(0)
+
+
+
         return binary_pixel_list
 
     def assemble_pixel(self, pixel: list):
             assert len(pixel) == 6, "pixel must be of length 6"
             assert len(self.x_max) == 6, "x_max array must be of length 6"
             assert len(self.angles) == 6, "angles array must be of length 6"
+
+            print(pixel)
 
             for i, binary in enumerate(pixel):
                 if int(binary) == 0:
