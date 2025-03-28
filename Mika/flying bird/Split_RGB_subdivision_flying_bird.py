@@ -43,7 +43,7 @@ class PatternGeneration:
                 raise Exception("Image must have a resolution of 90x90")
             self.images.append(image)
 
-        self.image_width, self.image_height = 30, 45
+        self.image_width, self.image_height = 90, 90
 
         self.added_RGB_values = []
         self.binary_pixel_list = self.generate_binary_pixel_list(self.images)
