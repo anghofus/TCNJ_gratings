@@ -66,17 +66,26 @@ class PatternGeneration:
             matrices.append(matrix)
 
         for y in range(89, -1, -1):
-            for x in range(89, -1, -1):
-                pixel = []
-                for i in range(len(matrices)):
-                    pixel.append(matrices[i][y][x])
+            if y % 2 == 0:
+                for x in range(89, -1, -1):
+                    pixel = []
+                    for i in range(len(matrices)):
+                        pixel.append(matrices[i][y][x])
 
-                binary_pixel_list.append(pixel)
+                    binary_pixel_list.append(pixel)
 
-                if any(pixel):
-                    self.added_RGB_values.append(765)
-                else:
-                    self.added_RGB_values.append(0)
+            else:
+                for x in range(0, 89, 1):
+                    pixel = []
+                    for i in range(len(matrices)):
+                        pixel.append(matrices[i][y][x])
+
+                    binary_pixel_list.append(pixel)
+
+            if any(pixel):
+                self.added_RGB_values.append(765)
+            else:
+                self.added_RGB_values.append(0)
 
 
 
