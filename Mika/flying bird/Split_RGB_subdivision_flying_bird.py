@@ -92,18 +92,12 @@ class PatternGeneration:
                     else:
                         self.added_RGB_values.append(0)
 
-
-
-
-
         return binary_pixel_list
 
     def assemble_pixel(self, pixel: list):
             assert len(pixel) == 6, "pixel must be of length 6"
             assert len(self.x_max) == 6, "x_max array must be of length 6"
             assert len(self.angles) == 6, "angles array must be of length 6"
-
-            print(pixel)
 
             for i, binary in enumerate(pixel):
                 if int(binary) == 0:
