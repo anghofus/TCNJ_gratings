@@ -19,7 +19,7 @@ class PatternGeneration:
         self.threshold = 150
         self.x_max = [20, 20, 20, 20, 20, 20]
         self.y_max = [128, 128, 128, 128, 128, 128]
-        self.angles = [0, 25, 50, 100, 125, 150]
+        self.angles = [0, 30, 60, 90, 120, 150]
 
         self.file_path = get_file_path()
 
@@ -74,18 +74,25 @@ class PatternGeneration:
 
                     binary_pixel_list.append(pixel)
 
+                    if any(pixel):
+                        self.added_RGB_values.append(765)
+                    else:
+                        self.added_RGB_values.append(0)
+
             else:
-                for x in range(0, 89, 1):
+                for x in range(0, 90, 1):
                     pixel = []
                     for i in range(len(matrices)):
                         pixel.append(matrices[i][y][x])
 
                     binary_pixel_list.append(pixel)
 
-            if any(pixel):
-                self.added_RGB_values.append(765)
-            else:
-                self.added_RGB_values.append(0)
+                    if any(pixel):
+                        self.added_RGB_values.append(765)
+                    else:
+                        self.added_RGB_values.append(0)
+
+
 
 
 
