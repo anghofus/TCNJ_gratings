@@ -30,7 +30,7 @@ class PatternGeneration:
         self.slm_width = 1920
         self.slm_height = 1152
         self.slm_x = 484
-        self.slm_y = 323
+        self.slm_y = 484
 
         self.pixel = np.zeros((self.slm_height, self.slm_width))
 
@@ -38,6 +38,7 @@ class PatternGeneration:
         self.matrix_pixel_list = []
 
         for path in self.file_path:
+            print(path)
             image = Image.open(path).convert('L')
             if image.size != (90, 90):
                 raise Exception("Image must have a resolution of 90x90")
