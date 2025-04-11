@@ -12,7 +12,7 @@ class JonasDOE:
         self.output_path = os.path.join(os.getcwd(), "patterns")
         self.image = Image.open(get_file_path())
         self.slm_x = 484
-        self.slm_y = 323
+        self.slm_y = 290
 
         self.added_RGB_values =[]
 
