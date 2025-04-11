@@ -22,10 +22,8 @@ def get_file_path():
 
 def gs(img, max_iter):
     height, width = img.shape
-
-    far_field_amplitude = np.abs(np.fft.fft2(img))
     far_field_phase = np.zeros((height, width))
-    far_field = far_field_amplitude * np.exp(1j * far_field_phase)
+    far_field = img * np.exp(1j * far_field_phase)
 
     for i in range(max_iter):
         near_field = np.fft.ifft2(far_field)
@@ -50,8 +48,6 @@ phase_map = Image.fromarray(phase_normalized_scaled)
 phase_map.show()
 phase_map.save("phase.png")
 
-reconstructed = np.fft.fft2(complex_near_field_array)
+reconstructed = np.fft.fft2(phase)
 reconstructed_intensity = np.abs(reconstructed)
 Image.fromarray((reconstructed_intensity / np.max(reconstructed_intensity) * 255).astype(np.uint8)).show()
-
-
