@@ -4,7 +4,6 @@ from PIL import Image
 import numpy as np
 from scipy.interpolate import RectBivariateSpline 
 
-
 def get_file_path():
 	"""
 	Opens a file dialog to select a single image file.
@@ -51,7 +50,7 @@ def gs(img, max_iter):
 		far_field = target_amplitude * np.exp(1j*np.angle(far_field)) 
 		near_field = np.fft.ifft2(far_field) 
 
-		print(f"Iteration {i}")
+		print(f"Iteration {i+1}")
 	
 	phase_map = np.fft.fftshift(np.angle(near_field)) #pull out phase and fftshift it 
 
@@ -64,8 +63,17 @@ def gs(img, max_iter):
 image = Image.open(get_file_path()).convert("L")
 image_array = np.asarray(image)
 
+while True:
+	max_iters = input('How many iterations?:')
+	try: 
+		max_iters = int(max_iters) 
+	except:
+		print('ERROR: Enter an integer')
+	else:
+		break
+		
 # Run Gerchberg-Saxton algorithm
-phase = gs(image_array, 200)
+phase = gs(image_array, max_iters)
 
 # Extract and normalize the phase to 0–255 for visualization
 #direct mapping
@@ -74,8 +82,18 @@ phase_normalized_scaled = (((phase + np.pi) / (2 * np.pi)) * 128).astype(np.uint
 
 # Save and display the phase map
 phase_map = Image.fromarray(phase_normalized_scaled)
+
+#get user input for filename and save phase map 
+while True:
+	phase_filename = input('Filename for phase map (include extension):')
+	try: 
+		phase_map.save(phase_filename)
+	except:
+		print('ERROR: Enter a valid filename')
+	else:
+		break
+
 phase_map.show()
-phase_map.save("phase.png")
 
 # Reconstruct far-field intensity for verification
 reconstructed_field = np.exp(1j * phase)  # reconstruct complex field from phase
